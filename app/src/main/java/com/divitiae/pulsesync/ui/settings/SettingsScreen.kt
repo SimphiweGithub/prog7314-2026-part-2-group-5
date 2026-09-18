@@ -59,23 +59,31 @@ fun SettingsScreen(
 ) {
     var state by remember { mutableStateOf(SettingsSampleData.initialState().copy(themeMode = themeMode)) }
     var keywordDraft by rememberSaveable { mutableStateOf("") }
+    var keywordError by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     SettingsContent(
         state = state.copy(themeMode = themeMode),
         keywordDraft = keywordDraft,
-        onKeywordDraftChange = { keywordDraft = it },
+        keywordError = keywordError,
+        onKeywordDraftChange = {
+            keywordDraft = it
+            keywordError = false // Clear the highlight as soon as the user edits.
+        },
         onAddKeyword = {
             when (val result = KeywordValidation.validate(keywordDraft, state.keywords)) {
                 is KeywordValidation.Result.Valid -> {
                     state = state.copy(keywords = state.keywords + result.keyword)
                     keywordDraft = ""
+                    keywordError = false
                 }
                 KeywordValidation.Result.Blank -> {
+                    keywordError = true
                     Toast.makeText(context, R.string.settings_keyword_blank_error, Toast.LENGTH_SHORT).show()
                 }
                 KeywordValidation.Result.Duplicate -> {
                     // Keep the draft so the user can see what was rejected.
+                    keywordError = true
                     Toast.makeText(context, R.string.settings_keyword_duplicate_error, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -100,6 +108,7 @@ fun SettingsScreen(
 fun SettingsContent(
     state: SettingsUiState,
     keywordDraft: String,
+    keywordError: Boolean,
     onKeywordDraftChange: (String) -> Unit,
     onAddKeyword: () -> Unit,
     onRemoveKeyword: (String) -> Unit,
@@ -161,6 +170,7 @@ fun SettingsContent(
                     value = keywordDraft,
                     onValueChange = onKeywordDraftChange,
                     onSubmit = onAddKeyword,
+                    isError = keywordError,
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -253,6 +263,7 @@ private fun SettingsPreview() {
         SettingsContent(
             state = SettingsSampleData.initialState(),
             keywordDraft = "",
+            keywordError = false,
             onKeywordDraftChange = {},
             onAddKeyword = {},
             onRemoveKeyword = {},

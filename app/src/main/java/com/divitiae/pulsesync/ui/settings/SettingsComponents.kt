@@ -3,6 +3,7 @@ package com.divitiae.pulsesync.ui.settings
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -280,8 +281,10 @@ fun AddKeywordField(
     onValueChange: (String) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
+    isError: Boolean = false,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
+    val errorColor = MaterialTheme.colorScheme.error
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -298,7 +301,11 @@ fun AddKeywordField(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .background(onSurface.copy(alpha = 0.06f), ChipShape)
+                .background(
+                    if (isError) errorColor.copy(alpha = 0.10f) else onSurface.copy(alpha = 0.06f),
+                    ChipShape,
+                )
+                .then(if (isError) Modifier.border(1.dp, errorColor, ChipShape) else Modifier)
                 .padding(horizontal = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -306,7 +313,7 @@ fun AddKeywordField(
             Icon(
                 imageVector = Icons.Rounded.Add,
                 contentDescription = null,
-                tint = onSurface,
+                tint = if (isError) errorColor else onSurface,
                 modifier = Modifier
                     .size(16.dp)
                     .clickable(onClick = onSubmit),
