@@ -1,0 +1,84 @@
+package com.divitiae.pulsesync.data.auth
+
+import com.divitiae.pulsesync.data.domain.AppError
+import com.divitiae.pulsesync.data.domain.Result
+import com.divitiae.pulsesync.data.domain.UserProfile
+import com.divitiae.pulsesync.data.local.dao.UserDao
+import com.divitiae.pulsesync.data.mapper.toDomain
+import com.divitiae.pulsesync.data.mapper.toEntity
+import com.divitiae.pulsesync.data.remote.PulseSyncApi
+import com.divitiae.pulsesync.data.remote.dto.GoogleSsoRequestDto
+import com.divitiae.pulsesync.data.repository.safeApiCall
+import com.divitiae.pulsesync.data.repository.safeApiCallEmpty
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+
+/**
+ * Handles the SSO flow: a Google ID token is signed into Firebase, the
+ * resulting Firebase ID token is exchanged with our API for a JWT, and the
+ * profile + tokens are persisted. Firebase is only touched during sign-in, so
+ * the app still launches and runs before google-services.json is added.
+ */
+class AuthRepository(
+    private val api: PulseSyncApi,
+    private val userDao: UserDao,
+    private val tokenStore: AuthTokenStore,
+    private val firebaseAuth: FirebaseAuth,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+) {
+    fun observeUser(): Flow<UserProfile?> =
+        userDao.observeCurrent().map { it?.toDomain() }
+
+    val isSignedIn: Boolean get() = tokenStore.accessToken != null
+
+    suspend fun currentUserId(): String = userDao.current()?.userId ?: "local"
+
+    suspend fun signInWithGoogleIdToken(
+        googleIdToken: String,
+        fcmToken: String?,
+    ): Result<UserProfile> = withContext(io) {
+        try {
+            val credential = GoogleAuthProvider.getCredential(googleIdToken, null)
+            val authResult = firebaseAuth.signInWithCredential(credential).await()
+            val firebaseUser = authResult.user
+                ?: return@withContext Result.Failure(AppError.Unauthorized("Firebase returned no user"))
+            val firebaseIdToken = firebaseUser.getIdToken(false).await().token
+                ?: return@withContext Result.Failure(AppError.Unauthorized("No Firebase ID token"))
+
+            when (
+                val exchange = safeApiCall {
+                    api.exchangeGoogleToken(GoogleSsoRequestDto(firebaseIdToken, fcmToken))
+                }
+            ) {
+                is Result.Success -> {
+                    tokenStore.save(exchange.data.accessToken, exchange.data.refreshToken)
+                    val profile = UserProfile(
+                        userId = exchange.data.userId.ifBlank { firebaseUser.uid },
+                        email = firebaseUser.email.orEmpty(),
+                        displayName = firebaseUser.displayName ?: firebaseUser.email.orEmpty(),
+                        photoUrl = firebaseUser.photoUrl?.toString(),
+                    )
+                    userDao.upsert(profile.toEntity(System.currentTimeMillis()))
+                    Result.Success(profile)
+                }
+
+                is Result.Failure -> exchange
+            }
+        } catch (e: Exception) {
+            Result.Failure(AppError.Unknown(e.message, e))
+        }
+    }
+
+    suspend fun signOut() = withContext(io) {
+        safeApiCallEmpty { api.logout() }
+        tokenStore.clear()
+        runCatching { firebaseAuth.signOut() }
+        userDao.clear()
+    }
+}
