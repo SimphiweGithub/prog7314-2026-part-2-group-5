@@ -63,11 +63,15 @@ fun SettingsScreen(
         keywordDraft = keywordDraft,
         onKeywordDraftChange = { keywordDraft = it },
         onAddKeyword = {
-            val keyword = keywordDraft.trim().lowercase()
-            if (keyword.isNotEmpty() && keyword !in state.keywords) {
-                state = state.copy(keywords = state.keywords + keyword)
+            when (val result = KeywordValidation.validate(keywordDraft, state.keywords)) {
+                is KeywordValidation.Result.Valid -> {
+                    state = state.copy(keywords = state.keywords + result.keyword)
+                    keywordDraft = ""
+                }
+                KeywordValidation.Result.Blank,
+                KeywordValidation.Result.Duplicate,
+                -> keywordDraft = ""
             }
-            keywordDraft = ""
         },
         onRemoveKeyword = { keyword -> state = state.copy(keywords = state.keywords - keyword) },
         onToggleTopic = { name, enabled ->

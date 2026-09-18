@@ -87,6 +87,8 @@
     <string name="settings_topics_title">Topics &amp; Tracking Keywords</string>
     <string name="settings_add_keyword_hint">Add a keyword to track (e.g. \"internship\")</string>
     <string name="settings_remove_keyword">Remove keyword %1$s</string>
+    <string name="settings_keyword_blank_error">Keyword cannot be empty.</string>
+    <string name="settings_keyword_duplicate_error">Keyword already tracked.</string>
     <string name="settings_storage_title">Storage &amp; Note Manager</string>
     <string name="settings_offline_articles">Offline articles</string>
     <string name="settings_slots_used">%1$d / %2$d slots used</string>
