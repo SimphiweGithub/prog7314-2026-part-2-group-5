@@ -1,6 +1,7 @@
 package com.divitiae.pulsesync.ui.settings
 
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -31,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,6 +59,7 @@ fun SettingsScreen(
 ) {
     var state by remember { mutableStateOf(SettingsSampleData.initialState().copy(themeMode = themeMode)) }
     var keywordDraft by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
 
     SettingsContent(
         state = state.copy(themeMode = themeMode),
@@ -68,9 +71,13 @@ fun SettingsScreen(
                     state = state.copy(keywords = state.keywords + result.keyword)
                     keywordDraft = ""
                 }
-                KeywordValidation.Result.Blank,
-                KeywordValidation.Result.Duplicate,
-                -> keywordDraft = ""
+                KeywordValidation.Result.Blank -> {
+                    Toast.makeText(context, R.string.settings_keyword_blank_error, Toast.LENGTH_SHORT).show()
+                }
+                KeywordValidation.Result.Duplicate -> {
+                    // Keep the draft so the user can see what was rejected.
+                    Toast.makeText(context, R.string.settings_keyword_duplicate_error, Toast.LENGTH_SHORT).show()
+                }
             }
         },
         onRemoveKeyword = { keyword -> state = state.copy(keywords = state.keywords - keyword) },
