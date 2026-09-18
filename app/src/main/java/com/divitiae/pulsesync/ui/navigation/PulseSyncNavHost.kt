@@ -8,19 +8,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.divitiae.pulsesync.ui.auth.SignInScreen
 import com.divitiae.pulsesync.ui.auth.SignUpScreen
+import com.divitiae.pulsesync.ui.components.BottomDestination
+import com.divitiae.pulsesync.ui.feed.FeedScreen
 
 /** Route names for the navigation graph. */
 object Routes {
     const val SIGN_IN = "sign_in"
     const val SIGN_UP = "sign_up"
+    const val FEED = "feed"
 }
 
 /**
- * Top-level navigation graph. Currently holds the auth flow; the feed,
- * article and settings destinations are added in later commits.
+ * Top-level navigation graph: auth flow → feed. Article detail and settings
+ * destinations are added in later commits.
  *
- * Auth actions are no-ops here on purpose: the UI layer exposes the events
- * and Member 4's ViewModels will consume them.
+ * Auth actions only navigate here; the actual sign-in/registration calls
+ * are Member 4's ViewModels, which will gate the navigation on success.
  */
 @Composable
 fun PulseSyncNavHost(
@@ -28,6 +31,13 @@ fun PulseSyncNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.SIGN_IN,
 ) {
+    fun enterApp() {
+        navController.navigate(Routes.FEED) {
+            popUpTo(Routes.SIGN_IN) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -35,9 +45,9 @@ fun PulseSyncNavHost(
     ) {
         composable(Routes.SIGN_IN) {
             SignInScreen(
-                onSignIn = { _, _ -> /* TODO(Member 4): AuthViewModel.signIn */ },
-                onGoogleSignIn = { /* TODO(Member 4): Google SSO */ },
-                onBiometricSignIn = { /* TODO(Member 4): BiometricPrompt */ },
+                onSignIn = { _, _ -> enterApp() /* TODO(Member 4): AuthViewModel.signIn */ },
+                onGoogleSignIn = { enterApp() /* TODO(Member 4): Google SSO */ },
+                onBiometricSignIn = { enterApp() /* TODO(Member 4): BiometricPrompt */ },
                 onForgotPassword = { /* TODO: password reset flow */ },
                 onNavigateToSignUp = {
                     navController.navigate(Routes.SIGN_UP) { launchSingleTop = true }
@@ -46,11 +56,23 @@ fun PulseSyncNavHost(
         }
         composable(Routes.SIGN_UP) {
             SignUpScreen(
-                onCreateAccount = { _, _, _ -> /* TODO(Member 4): AuthViewModel.register */ },
-                onGoogleSignUp = { /* TODO(Member 4): Google SSO */ },
+                onCreateAccount = { _, _, _ -> enterApp() /* TODO(Member 4): AuthViewModel.register */ },
+                onGoogleSignUp = { enterApp() /* TODO(Member 4): Google SSO */ },
                 onNavigateToSignIn = {
                     // Sign In is always the root, so pop back instead of stacking.
                     navController.popBackStack(Routes.SIGN_IN, inclusive = false)
+                },
+            )
+        }
+        composable(Routes.FEED) {
+            FeedScreen(
+                onOpenArticle = { /* TODO(Member 2, next commit): article detail route */ },
+                onNavigate = { destination ->
+                    when (destination) {
+                        BottomDestination.FEED -> Unit
+                        BottomDestination.VAULT -> Unit // Vault is outside Member 2's scope
+                        BottomDestination.SETTINGS -> Unit // TODO(Member 2): settings route
+                    }
                 },
             )
         }

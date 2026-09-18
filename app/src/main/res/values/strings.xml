@@ -34,4 +34,28 @@
     <string name="sign_up_go_to_sign_in">Sign In</string>
     <string name="sign_up_error_name_required">Enter your full name</string>
     <string name="sign_up_error_terms">You need to accept the terms to continue</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_feed">Feed</string>
+    <string name="nav_vault">Vault</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Feed Dashboard -->
+    <string name="feed_search_placeholder">Search articles, keywords…</string>
+    <string name="feed_meta">%1$s · %2$s</string>
+    <string name="feed_ai_summarized">AI Summarized</string>
+    <string name="feed_toggle_to_condensed">Switch to Super-Condensed (3 bullets)</string>
+    <string name="feed_toggle_to_detailed">Switch to Detailed View</string>
+    <string name="feed_bullet">•  %1$s</string>
+    <string name="feed_sentiment_positive">Positive</string>
+    <string name="feed_sentiment_neutral">Neutral</string>
+    <string name="feed_sentiment_negative">Negative</string>
+    <string name="feed_keyword">#%1$s</string>
+    <string name="feed_action_source">Source</string>
+    <string name="feed_action_note">Note</string>
+    <string name="feed_action_resources">%1$d/%2$d</string>
+    <string name="feed_action_save">Save</string>
+    <string name="feed_action_saved">Saved</string>
+    <string name="feed_empty_title">No articles yet</string>
+    <string name="feed_empty_body">Pull down to refresh or try another category.</string>
 </resources>

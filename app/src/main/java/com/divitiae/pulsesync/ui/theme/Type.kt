@@ -11,18 +11,22 @@ private val Brand = FontFamily.SansSerif
 
 /**
  * Text styles mapped from the Figma text styles:
- *  - titleLarge  = brand title on Sign In (22 / 26, Medium)
- *  - titleMedium = screen heading e.g. "Create your account" (18 / 22, Medium)
- *  - bodyMedium  = PulseSync/Body (14 / 20, Regular)
- *  - labelLarge  = PulseSync/Button Label (14 / 18, Medium)
- *  - bodySmall   = PulseSync/Caption (12 / 16, Regular)
+ *  - headlineSmall = PulseSync/Headline, app bar title (20 / 26, Medium)
+ *  - titleLarge    = brand title on Sign In (22 / 26, Medium)
+ *  - titleMedium   = screen heading e.g. "Create your account" (18 / 22, Medium)
+ *  - titleSmall    = PulseSync/Title, article card title (16 / 22, Medium)
+ *  - bodyMedium    = PulseSync/Body (14 / 20, Regular)
+ *  - labelLarge    = PulseSync/Button Label (14 / 18, Medium)
+ *  - bodySmall     = PulseSync/Caption (12 / 16, Regular)
+ *  - labelSmall    = PulseSync/Nav Label (11 / 14, Medium)
  */
 val PulseSyncTypography = Typography(
     headlineLarge = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 40.sp),
     headlineMedium = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 32.sp),
+    headlineSmall = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 26.sp),
     titleLarge = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 22.sp, lineHeight = 26.sp),
     titleMedium = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 18.sp, lineHeight = 22.sp),
-    titleSmall = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 20.sp),
+    titleSmall = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp),
     bodyLarge = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
     bodyMedium = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp),
     bodySmall = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 16.sp),
@@ -30,3 +34,12 @@ val PulseSyncTypography = Typography(
     labelMedium = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 16.sp),
     labelSmall = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 14.sp),
 )
+
+/** Extra Figma sizes that have no Material slot. */
+object PulseSyncTextStyles {
+    /** 10 / 16 Regular: AI badge, sentiment and keyword chips. */
+    val chip = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Normal, fontSize = 10.sp, lineHeight = 16.sp)
+
+    /** 12 / 14 Medium: category tab labels. */
+    val tab = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 14.sp)
+}
