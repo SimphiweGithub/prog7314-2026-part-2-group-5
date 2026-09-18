@@ -42,4 +42,7 @@ object PulseSyncTextStyles {
 
     /** 12 / 14 Medium: category tab labels. */
     val tab = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 14.sp)
+
+    /** 13 sp Medium: "Extracted Resources & Links" panel heading. */
+    val panelTitleSize = 13.sp
 }

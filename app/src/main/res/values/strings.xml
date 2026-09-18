@@ -58,4 +58,24 @@
     <string name="feed_action_saved">Saved</string>
     <string name="feed_empty_title">No articles yet</string>
     <string name="feed_empty_body">Pull down to refresh or try another category.</string>
+
+    <!-- Article Detail -->
+    <string name="article_title">Article</string>
+    <string name="article_back">Back</string>
+    <string name="article_save">Save article</string>
+    <string name="article_unsave">Remove from saved</string>
+    <string name="article_view_source">%1$s — View original source</string>
+    <string name="article_ai_disclosure">This summary and its tags were generated using AI. Always verify against the original source.</string>
+    <string name="article_offline_badge">Downloaded for offline · %1$d/%2$d slots used</string>
+    <string name="article_resources_title">Extracted Resources &amp; Links</string>
+    <string name="article_resources_empty">No links were found in this article.</string>
+    <string name="article_no_app_for_link">No app on this device can open that link.</string>
+    <string name="article_notes_title">My Notes</string>
+    <string name="article_notes_placeholder">Add a note about this article…</string>
+    <string name="article_notes_synced">Synced to Cloud</string>
+    <string name="article_notes_local">Saved locally</string>
+    <string name="article_notes_no_tag">No tag</string>
+    <string name="article_notes_save">Save Note</string>
+    <string name="article_notes_saved">Note saved.</string>
+    <string name="article_notes_empty_error">Note content cannot be empty.</string>
 </resources>

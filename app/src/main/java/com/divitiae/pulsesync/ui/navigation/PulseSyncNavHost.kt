@@ -6,9 +6,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.divitiae.pulsesync.ui.article.ArticleDetailScreen
 import com.divitiae.pulsesync.ui.auth.SignInScreen
 import com.divitiae.pulsesync.ui.auth.SignUpScreen
 import com.divitiae.pulsesync.ui.components.BottomDestination
+import com.divitiae.pulsesync.ui.feed.FeedSampleData
 import com.divitiae.pulsesync.ui.feed.FeedScreen
 
 /** Route names for the navigation graph. */
@@ -16,11 +20,15 @@ object Routes {
     const val SIGN_IN = "sign_in"
     const val SIGN_UP = "sign_up"
     const val FEED = "feed"
+    const val ARTICLE_ID_ARG = "articleId"
+    const val ARTICLE = "article/{$ARTICLE_ID_ARG}"
+
+    fun article(articleId: String): String = "article/$articleId"
 }
 
 /**
- * Top-level navigation graph: auth flow → feed. Article detail and settings
- * destinations are added in later commits.
+ * Top-level navigation graph: auth flow → feed → article detail. The
+ * settings destination is added in a later commit.
  *
  * Auth actions only navigate here; the actual sign-in/registration calls
  * are Member 4's ViewModels, which will gate the navigation on success.
@@ -66,7 +74,9 @@ fun PulseSyncNavHost(
         }
         composable(Routes.FEED) {
             FeedScreen(
-                onOpenArticle = { /* TODO(Member 2, next commit): article detail route */ },
+                onOpenArticle = { article ->
+                    navController.navigate(Routes.article(article.id)) { launchSingleTop = true }
+                },
                 onNavigate = { destination ->
                     when (destination) {
                         BottomDestination.FEED -> Unit
@@ -75,6 +85,24 @@ fun PulseSyncNavHost(
                     }
                 },
             )
+        }
+        composable(
+            route = Routes.ARTICLE,
+            arguments = listOf(navArgument(Routes.ARTICLE_ID_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val articleId = backStackEntry.arguments?.getString(Routes.ARTICLE_ID_ARG)
+            // TODO(Member 4): resolve from the ArticleViewModel instead of sample data.
+            val article = articleId?.let(FeedSampleData::articleById)
+            if (article == null) {
+                navController.popBackStack()
+            } else {
+                ArticleDetailScreen(
+                    article = article,
+                    onBack = { navController.popBackStack() },
+                    onToggleSave = { /* TODO(Member 4): persist saved state */ },
+                    onSaveNote = { _, _ -> /* TODO(Member 4): NotesViewModel.save */ },
+                )
+            }
         }
     }
 }

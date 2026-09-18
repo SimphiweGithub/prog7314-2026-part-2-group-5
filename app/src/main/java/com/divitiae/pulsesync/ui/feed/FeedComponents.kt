@@ -266,8 +266,8 @@ fun ArticleCard(
                     icon = Icons.Rounded.Download,
                     label = stringResource(
                         R.string.feed_action_resources,
-                        article.resourcesExtracted,
-                        article.resourcesTotal,
+                        article.offlineSlotsUsed,
+                        article.offlineSlotsTotal,
                     ),
                     onClick = onOpenResources,
                 )
