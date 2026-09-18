@@ -1,39 +1,82 @@
 package com.divitiae.pulsesync.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val PulseSyncColorScheme = darkColorScheme(
-    primary = ElectricTeal,
-    onPrimary = DarkIrisSlate,
-    primaryContainer = RoyalViolet,
-    onPrimaryContainer = PureWhite,
-    secondary = RoyalViolet,
+/**
+ * Light scheme = the default Figma frames (cream canvas, navy text/buttons,
+ * teal links, mint accent). Alpha-tinted fills in the design (navy at 6 %,
+ * 15 %, 20 %) are derived from onSurface at the component level so they stay
+ * correct in both schemes.
+ */
+private val LightColorScheme = lightColorScheme(
+    primary = Navy,
+    onPrimary = Cream,
+    primaryContainer = Navy,
+    onPrimaryContainer = Cream,
+    secondary = Teal,
     onSecondary = PureWhite,
-    secondaryContainer = VioletSurfaceHigh,
+    secondaryContainer = Teal,
     onSecondaryContainer = PureWhite,
-    background = DarkIrisSlate,
-    onBackground = PureWhite,
-    surface = DarkIrisSlate,
-    onSurface = PureWhite,
-    surfaceVariant = VioletSurface,
-    onSurfaceVariant = WhiteMuted,
-    outline = RoyalViolet,
+    tertiary = Mint,
+    onTertiary = Navy,
+    background = Cream,
+    onBackground = Navy,
+    surface = Cream,
+    onSurface = Navy,
+    surfaceVariant = Cream,
+    onSurfaceVariant = Navy,
+    surfaceContainer = PureWhite,
+    surfaceContainerHigh = PureWhite,
+    outline = Navy.copy(alpha = 0.20f),
+    outlineVariant = Navy.copy(alpha = 0.15f),
     error = ErrorRed,
-    onError = DarkIrisSlate,
+    onError = PureWhite,
 )
 
 /**
- * Single source of truth for PulseSync colours and typography.
- * The brand is a fixed dark theme (Dark Iris Slate background, Royal Violet
- * surfaces, Electric Teal accents, pure white text), so the scheme does not
- * follow the system light/dark setting.
+ * Dark scheme = the "(Dark)" Figma frames (ink canvas, cream text, navy
+ * containers, teal links, mint accent).
+ */
+private val DarkColorScheme = darkColorScheme(
+    primary = Navy,
+    onPrimary = Cream,
+    primaryContainer = Navy,
+    onPrimaryContainer = Cream,
+    secondary = Teal,
+    onSecondary = PureWhite,
+    secondaryContainer = Teal,
+    onSecondaryContainer = PureWhite,
+    tertiary = Mint,
+    onTertiary = Navy,
+    background = Ink,
+    onBackground = Cream,
+    surface = Ink,
+    onSurface = Cream,
+    surfaceVariant = Ink,
+    onSurfaceVariant = Cream,
+    surfaceContainer = Navy,
+    surfaceContainerHigh = Navy,
+    outline = Cream.copy(alpha = 0.20f),
+    outlineVariant = Cream.copy(alpha = 0.15f),
+    error = ErrorRed,
+    onError = PureWhite,
+)
+
+/**
+ * Single source of truth for PulseSync colours and typography. Follows the
+ * system light/dark setting by default so both Figma variants are honoured.
  */
 @Composable
-fun PulseSyncTheme(content: @Composable () -> Unit) {
+fun PulseSyncTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
     MaterialTheme(
-        colorScheme = PulseSyncColorScheme,
+        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
         typography = PulseSyncTypography,
         content = content,
     )

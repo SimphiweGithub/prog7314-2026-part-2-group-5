@@ -1,3 +1,37 @@
 <resources>
     <string name="app_name">PulseSync</string>
+
+    <!-- Auth: shared -->
+    <string name="auth_tagline">Your personalized news &amp; study vault</string>
+    <string name="auth_email_placeholder">Email address</string>
+    <string name="auth_password_placeholder">Password</string>
+    <string name="auth_show_password">Show password</string>
+    <string name="auth_hide_password">Hide password</string>
+    <string name="auth_error_email_required">Enter your email address</string>
+    <string name="auth_error_email_invalid">Enter a valid email address</string>
+    <string name="auth_error_password_required">Enter your password</string>
+    <string name="auth_error_password_short">Password must be at least 8 characters</string>
+
+    <!-- Auth: Sign In -->
+    <string name="sign_in_google">Continue with Google</string>
+    <string name="sign_in_fingerprint">Sign in with Fingerprint</string>
+    <string name="sign_in_divider">or sign in with email</string>
+    <string name="sign_in_forgot_password">Forgot password?</string>
+    <string name="sign_in_button">Sign In</string>
+    <string name="sign_in_no_account">Don\'t have an account?</string>
+    <string name="sign_in_go_to_sign_up">Sign Up</string>
+
+    <!-- Auth: Sign Up -->
+    <string name="sign_up_title">Create your account</string>
+    <string name="sign_up_subtitle">Join PulseSync to start tracking what matters</string>
+    <string name="sign_up_google">Sign up with Google</string>
+    <string name="sign_up_divider">or sign up with email</string>
+    <string name="sign_up_name_placeholder">Full name</string>
+    <string name="sign_up_password_placeholder">Create password</string>
+    <string name="sign_up_terms">I agree to the Terms of Service and Privacy Policy</string>
+    <string name="sign_up_button">Create Account</string>
+    <string name="sign_up_have_account">Already have an account?</string>
+    <string name="sign_up_go_to_sign_in">Sign In</string>
+    <string name="sign_up_error_name_required">Enter your full name</string>
+    <string name="sign_up_error_terms">You need to accept the terms to continue</string>
 </resources>
