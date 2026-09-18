@@ -30,11 +30,17 @@ class PreferencesRepository(private val context: Context) {
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { p ->
         UserPreferences(
-            defaultSummaryMode = p[Keys.summaryMode]?.let(::enumOrNull) ?: SummaryModePref.DETAILED,
+            defaultSummaryMode = p[Keys.summaryMode]
+                ?.let { runCatching { SummaryModePref.valueOf(it) }.getOrNull() }
+                ?: SummaryModePref.DETAILED,
             language = p[Keys.language] ?: "English",
             biometricLock = p[Keys.biometric] ?: false,
-            themeMode = p[Keys.theme]?.let(::enumOrNull) ?: ThemePref.SYSTEM,
-            fontSize = p[Keys.fontSize]?.let(::enumOrNull) ?: FontSizePref.MEDIUM,
+            themeMode = p[Keys.theme]
+                ?.let { runCatching { ThemePref.valueOf(it) }.getOrNull() }
+                ?: ThemePref.SYSTEM,
+            fontSize = p[Keys.fontSize]
+                ?.let { runCatching { FontSizePref.valueOf(it) }.getOrNull() }
+                ?: FontSizePref.MEDIUM,
             highContrast = p[Keys.highContrast] ?: false,
         )
     }
@@ -67,7 +73,4 @@ class PreferencesRepository(private val context: Context) {
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
     }
-
-    private inline fun <reified T : Enum<T>> enumOrNull(name: String): T? =
-        runCatching { enumValueOf<T>(name) }.getOrNull()
 }
