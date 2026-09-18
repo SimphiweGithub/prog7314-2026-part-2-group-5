@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
  * Light scheme = the default Figma frames (cream canvas, navy text/buttons,
@@ -66,18 +68,24 @@ private val DarkColorScheme = darkColorScheme(
     onError = PureWhite,
 )
 
+/** True while the dark Figma scheme is active; for components with scheme-specific fills. */
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
+
 /**
  * Single source of truth for PulseSync colours and typography. Follows the
- * system light/dark setting by default so both Figma variants are honoured.
+ * system light/dark setting by default so both Figma variants are honoured;
+ * the Settings screen can override it via [darkTheme].
  */
 @Composable
 fun PulseSyncTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
-        typography = PulseSyncTypography,
-        content = content,
-    )
+    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            typography = PulseSyncTypography,
+            content = content,
+        )
+    }
 }

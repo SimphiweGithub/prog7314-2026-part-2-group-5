@@ -14,12 +14,15 @@ import com.divitiae.pulsesync.ui.auth.SignUpScreen
 import com.divitiae.pulsesync.ui.components.BottomDestination
 import com.divitiae.pulsesync.ui.feed.FeedSampleData
 import com.divitiae.pulsesync.ui.feed.FeedScreen
+import com.divitiae.pulsesync.ui.settings.SettingsScreen
+import com.divitiae.pulsesync.ui.settings.ThemeMode
 
 /** Route names for the navigation graph. */
 object Routes {
     const val SIGN_IN = "sign_in"
     const val SIGN_UP = "sign_up"
     const val FEED = "feed"
+    const val SETTINGS = "settings"
     const val ARTICLE_ID_ARG = "articleId"
     const val ARTICLE = "article/{$ARTICLE_ID_ARG}"
 
@@ -27,18 +30,28 @@ object Routes {
 }
 
 /**
- * Top-level navigation graph: auth flow → feed → article detail. The
- * settings destination is added in a later commit.
+ * Top-level navigation graph: auth flow → feed → article detail, plus the
+ * settings tab. Vault is outside Member 2's scope and stays a no-op.
  *
  * Auth actions only navigate here; the actual sign-in/registration calls
  * are Member 4's ViewModels, which will gate the navigation on success.
  */
 @Composable
 fun PulseSyncNavHost(
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.SIGN_IN,
 ) {
+    fun switchTab(route: String) {
+        navController.navigate(route) {
+            popUpTo(Routes.FEED) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     fun enterApp() {
         navController.navigate(Routes.FEED) {
             popUpTo(Routes.SIGN_IN) { inclusive = true }
@@ -81,7 +94,20 @@ fun PulseSyncNavHost(
                     when (destination) {
                         BottomDestination.FEED -> Unit
                         BottomDestination.VAULT -> Unit // Vault is outside Member 2's scope
-                        BottomDestination.SETTINGS -> Unit // TODO(Member 2): settings route
+                        BottomDestination.SETTINGS -> switchTab(Routes.SETTINGS)
+                    }
+                },
+            )
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                themeMode = themeMode,
+                onThemeModeChange = onThemeModeChange,
+                onNavigate = { destination ->
+                    when (destination) {
+                        BottomDestination.FEED -> switchTab(Routes.FEED)
+                        BottomDestination.VAULT -> Unit // Vault is outside Member 2's scope
+                        BottomDestination.SETTINGS -> Unit
                     }
                 },
             )
