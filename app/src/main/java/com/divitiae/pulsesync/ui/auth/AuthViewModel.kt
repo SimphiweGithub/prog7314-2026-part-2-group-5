@@ -33,3 +33,29 @@ import kotlinx.coroutines.withTimeoutOrNull
  * All strings shown to the user are resolved in the composable layer, so this
  * class holds no Context.
  */
+
+class AuthViewModel(
+    private val authRepository: AuthRepository,
+    private val tokenStore: AuthTokenStore,
+) : ViewModel() {
+
+    /** null = idle (nothing attempted yet, or a previous error was dismissed). */
+    private val _signInState = MutableStateFlow<UiState<UserProfile>?>(null)
+    val signInState: StateFlow<UiState<UserProfile>?> = _signInState.asStateFlow()
+
+    /** null = still checking disk; true = a JWT exists so skip the sign-in screen. */
+    private val _hasExistingSession = MutableStateFlow<Boolean?>(null)
+    val hasExistingSession: StateFlow<Boolean?> = _hasExistingSession.asStateFlow()
+
+    /** One-shot UI events that are not part of persistent state. */
+    private val _events = MutableStateFlow<AuthEvent?>(null)
+    val events: StateFlow<AuthEvent?> = _events.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            // AppContainer.initialise() also calls load(), but racing it here is
+            // harmless (idempotent) and guarantees the value is fresh before we route.
+            tokenStore.load()
+            _hasExistingSession.value = tokenStore.accessToken != null
+        }
+    }
