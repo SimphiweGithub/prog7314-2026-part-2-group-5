@@ -4,7 +4,7 @@ package com.divitiae.pulsesync.ui.article
  * ---------------------------------------------------------------------
  * CODE ATTRIBUTION
  * ---------------------------------------------------------------------
- * The Scaffold + SnackbarHost structure, state hoisting, window-inset padding and preview annotations in this file were adapted from:
+ * The Scaffold + SnackbarHost structure, Toast feedback, state hoisting, window-inset padding and preview annotations in this file were adapted from:
  *
  * Android Developers (2026) Scaffold. [online]
  * Available at: https://developer.android.com/develop/ui/compose/components/scaffold
@@ -12,6 +12,10 @@ package com.divitiae.pulsesync.ui.article
  *
  * Android Developers (2026) Snackbar. [online]
  * Available at: https://developer.android.com/develop/ui/compose/components/snackbar
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Toasts overview. [online]
+ * Available at: https://developer.android.com/guide/topics/ui/notifiers/toasts
  * [Accessed 20 September 2026].
  *
  * Android Developers (2026) Where to hoist state. [online]
@@ -29,6 +33,7 @@ package com.divitiae.pulsesync.ui.article
  */
 
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,9 +76,10 @@ import kotlinx.coroutines.launch
  * Article Detail & Interactive Workspace (Figma 6:35, dark 29:168).
  *
  * Hosts User Defined Features 2 and 3: the Extracted Resource Links Panel
- * (explicit intents) and the Embedded Contextual Notes Editor (empty-note
- * validation → red highlight + Snackbar). Note persistence is delegated to
- * [onSaveNote] for Member 4's ViewModel.
+ * (explicit intents) and the Embedded Contextual Notes Editor (title, body,
+ * tag chips; empty title/body validation → red highlight + Snackbar; blank or
+ * duplicate tag → Toast). Note persistence is delegated to [onSaveNote] for
+ * Member 4's ViewModel.
  */
 @Composable
 fun ArticleDetailScreen(
@@ -89,9 +95,13 @@ fun ArticleDetailScreen(
     val scope = rememberCoroutineScope()
 
     var isSaved by rememberSaveable(article.id) { mutableStateOf(article.isSaved) }
+    var noteTitle by rememberSaveable(article.id) { mutableStateOf(article.note?.title.orEmpty()) }
     var noteText by rememberSaveable(article.id) { mutableStateOf(article.note?.text.orEmpty()) }
+    var noteTags by rememberSaveable(article.id) { mutableStateOf(article.note?.tags.orEmpty()) }
+    var tagDraft by rememberSaveable(article.id) { mutableStateOf("") }
     var syncState by rememberSaveable(article.id) { mutableStateOf(article.note?.syncState ?: NoteSyncState.LOCAL) }
-    var noteError by rememberSaveable(article.id) { mutableStateOf(false) }
+    var titleError by rememberSaveable(article.id) { mutableStateOf(false) }
+    var bodyError by rememberSaveable(article.id) { mutableStateOf(false) }
 
     val emptyNoteMessage = stringResource(R.string.article_notes_empty_error)
     val noteSavedMessage = stringResource(R.string.article_notes_saved)
@@ -99,13 +109,39 @@ fun ArticleDetailScreen(
 
     ArticleDetailContent(
         article = article.copy(isSaved = isSaved),
+        noteTitle = noteTitle,
+        onNoteTitleChange = {
+            noteTitle = it
+            titleError = false // Clear the highlight as soon as the user types.
+        },
         noteText = noteText,
         onNoteTextChange = {
             noteText = it
-            if (it.isNotBlank()) noteError = false
+            bodyError = false
         },
+        noteTags = noteTags,
+        tagDraft = tagDraft,
+        onTagDraftChange = { tagDraft = it },
+        onAddTag = {
+            val tag = tagDraft.trim()
+            when {
+                tag.isEmpty() -> {
+                    // Adapted from: Android Developers (2026) Toasts overview. https://developer.android.com/guide/topics/ui/notifiers/toasts
+                    Toast.makeText(context, R.string.article_notes_tag_blank_error, Toast.LENGTH_SHORT).show()
+                }
+                noteTags.any { it.equals(tag, ignoreCase = true) } -> {
+                    Toast.makeText(context, R.string.article_notes_tag_duplicate_error, Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                    noteTags = noteTags + tag
+                    tagDraft = ""
+                }
+            }
+        },
+        onRemoveTag = { tag -> noteTags = noteTags - tag },
         noteSyncState = syncState,
-        noteError = noteError,
+        titleError = titleError,
+        bodyError = bodyError,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onToggleSave = {
@@ -123,12 +159,17 @@ fun ArticleDetailScreen(
             }
         },
         onSaveNote = {
-            if (noteText.isBlank()) {
-                noteError = true
+            titleError = noteTitle.isBlank()
+            bodyError = noteText.isBlank()
+            if (titleError || bodyError) {
                 scope.launch { snackbarHostState.showSnackbar(emptyNoteMessage) }
             } else {
-                noteError = false
-                val note = NoteUi(text = noteText.trim(), tag = article.note?.tag, syncState = NoteSyncState.LOCAL)
+                val note = NoteUi(
+                    title = noteTitle.trim(),
+                    text = noteText.trim(),
+                    tags = noteTags,
+                    syncState = NoteSyncState.LOCAL,
+                )
                 syncState = NoteSyncState.LOCAL
                 onSaveNote(article, note)
                 scope.launch { snackbarHostState.showSnackbar(noteSavedMessage) }
@@ -141,10 +182,18 @@ fun ArticleDetailScreen(
 @Composable
 fun ArticleDetailContent(
     article: ArticleUi,
+    noteTitle: String,
+    onNoteTitleChange: (String) -> Unit,
     noteText: String,
     onNoteTextChange: (String) -> Unit,
+    noteTags: List<String>,
+    tagDraft: String,
+    onTagDraftChange: (String) -> Unit,
+    onAddTag: () -> Unit,
+    onRemoveTag: (String) -> Unit,
     noteSyncState: NoteSyncState,
-    noteError: Boolean,
+    titleError: Boolean,
+    bodyError: Boolean,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onToggleSave: () -> Unit,
@@ -196,11 +245,18 @@ fun ArticleDetailContent(
             ResourceLinksPanel(resources = article.resources, onOpen = onOpenResource)
 
             NotesEditorCard(
+                title = noteTitle,
+                onTitleChange = onNoteTitleChange,
                 text = noteText,
                 onTextChange = onNoteTextChange,
-                tag = article.note?.tag,
+                tags = noteTags,
+                tagDraft = tagDraft,
+                onTagDraftChange = onTagDraftChange,
+                onAddTag = onAddTag,
+                onRemoveTag = onRemoveTag,
                 syncState = noteSyncState,
-                isError = noteError,
+                isTitleError = titleError,
+                isBodyError = bodyError,
                 onSave = {
                     focusManager.clearFocus()
                     onSaveNote()
@@ -225,10 +281,18 @@ private fun ArticleDetailPreview() {
     PulseSyncTheme {
         ArticleDetailContent(
             article = article,
+            noteTitle = article.note?.title.orEmpty(),
+            onNoteTitleChange = {},
             noteText = article.note?.text.orEmpty(),
             onNoteTextChange = {},
+            noteTags = article.note?.tags.orEmpty(),
+            tagDraft = "",
+            onTagDraftChange = {},
+            onAddTag = {},
+            onRemoveTag = {},
             noteSyncState = NoteSyncState.SYNCED,
-            noteError = false,
+            titleError = false,
+            bodyError = false,
             snackbarHostState = SnackbarHostState(),
             onBack = {},
             onToggleSave = {},
@@ -246,10 +310,18 @@ private fun ArticleDetailErrorPreview() {
     PulseSyncTheme {
         ArticleDetailContent(
             article = article,
+            noteTitle = "",
+            onNoteTitleChange = {},
             noteText = "",
             onNoteTextChange = {},
+            noteTags = emptyList(),
+            tagDraft = "",
+            onTagDraftChange = {},
+            onAddTag = {},
+            onRemoveTag = {},
             noteSyncState = NoteSyncState.LOCAL,
-            noteError = true,
+            titleError = true,
+            bodyError = true,
             snackbarHostState = SnackbarHostState(),
             onBack = {},
             onToggleSave = {},

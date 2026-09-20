@@ -59,8 +59,10 @@ data class ResourceLinkUi(
 enum class ResourceType { PDF, PORTAL, WEB, VIDEO }
 
 data class NoteUi(
+    val title: String,
     val text: String,
-    val tag: String? = null,
+    /** User-managed tags, rendered as removable chips in the notes editor. */
+    val tags: List<String> = emptyList(),
     val syncState: NoteSyncState = NoteSyncState.LOCAL,
 )
 

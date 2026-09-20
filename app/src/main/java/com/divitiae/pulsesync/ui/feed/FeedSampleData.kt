@@ -68,9 +68,10 @@ object FeedSampleData {
             offlineSlotsUsed = 3,
             offlineSlotsTotal = 5,
             note = NoteUi(
+                title = "NSFAS application checklist",
                 text = "Deadline is in 3 weeks — need certified ID copy + latest results. Ask study group if " +
                     "anyone has done means test already.",
-                tag = "Bursaries 2026",
+                tags = listOf("Bursaries 2026", "To-do"),
                 syncState = NoteSyncState.SYNCED,
             ),
         ),
