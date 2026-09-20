@@ -43,3 +43,42 @@ fun <T> UiStateBoundary(
         is UiState.Success -> content(state.data)
     }
 }
+
+@Composable
+fun LoadingPane(modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+    }
+}
+
+@Composable
+fun ErrorPane(
+    state: UiState.Error,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.CloudOff,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+            modifier = Modifier.size(40.dp),
+        )
+        Text(
+            text = state.userMessage(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 12.dp, bottom = 20.dp),
+        )
+        if (state.retryable) {
+            Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
+        }
+    }
+}
