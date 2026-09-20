@@ -1,0 +1,718 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "518fb6fdf7a3ce9c9d373ecb02f6d171",
+    "entities": [
+      {
+        "tableName": "articles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`articleId` TEXT NOT NULL, `headline` TEXT NOT NULL, `sourceName` TEXT NOT NULL, `sourceUrl` TEXT NOT NULL, `author` TEXT, `category` TEXT NOT NULL, `imageUrl` TEXT, `publishedAt` INTEGER NOT NULL, `readTimeMinutes` INTEGER NOT NULL, `summaryDetailed` TEXT NOT NULL, `summaryCondensed` TEXT NOT NULL, `summaryModel` TEXT NOT NULL, `sentiment` TEXT NOT NULL, `derivedTags` TEXT NOT NULL, `isBookmarked` INTEGER NOT NULL, `isDownloaded` INTEGER NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`articleId`))",
+        "fields": [
+          {
+            "fieldPath": "articleId",
+            "columnName": "articleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "headline",
+            "columnName": "headline",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceName",
+            "columnName": "sourceName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUrl",
+            "columnName": "sourceUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "author",
+            "columnName": "author",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publishedAt",
+            "columnName": "publishedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "readTimeMinutes",
+            "columnName": "readTimeMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summaryDetailed",
+            "columnName": "summaryDetailed",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summaryCondensed",
+            "columnName": "summaryCondensed",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summaryModel",
+            "columnName": "summaryModel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sentiment",
+            "columnName": "sentiment",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "derivedTags",
+            "columnName": "derivedTags",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBookmarked",
+            "columnName": "isBookmarked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDownloaded",
+            "columnName": "isDownloaded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "articleId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_articles_category",
+            "unique": false,
+            "columnNames": [
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_articles_category` ON `${TABLE_NAME}` (`category`)"
+          },
+          {
+            "name": "index_articles_publishedAt",
+            "unique": false,
+            "columnNames": [
+              "publishedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_articles_publishedAt` ON `${TABLE_NAME}` (`publishedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "extracted_links",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`linkId` TEXT NOT NULL, `articleId` TEXT NOT NULL, `url` TEXT NOT NULL, `label` TEXT NOT NULL, `linkType` TEXT NOT NULL, PRIMARY KEY(`linkId`), FOREIGN KEY(`articleId`) REFERENCES `articles`(`articleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "linkId",
+            "columnName": "linkId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "articleId",
+            "columnName": "articleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "linkType",
+            "columnName": "linkType",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "linkId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_extracted_links_articleId",
+            "unique": false,
+            "columnNames": [
+              "articleId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_links_articleId` ON `${TABLE_NAME}` (`articleId`)"
+          },
+          {
+            "name": "index_extracted_links_linkType",
+            "unique": false,
+            "columnNames": [
+              "linkType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_links_linkType` ON `${TABLE_NAME}` (`linkType`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "articles",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "articleId"
+            ],
+            "referencedColumns": [
+              "articleId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "article_full_text",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`articleId` TEXT NOT NULL, `sanitizedText` TEXT NOT NULL, `wordCount` INTEGER NOT NULL, `sizeBytes` INTEGER NOT NULL, `downloadedAt` INTEGER NOT NULL, PRIMARY KEY(`articleId`), FOREIGN KEY(`articleId`) REFERENCES `articles`(`articleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "articleId",
+            "columnName": "articleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sanitizedText",
+            "columnName": "sanitizedText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wordCount",
+            "columnName": "wordCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeBytes",
+            "columnName": "sizeBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "downloadedAt",
+            "columnName": "downloadedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "articleId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "articles",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "articleId"
+            ],
+            "referencedColumns": [
+              "articleId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`localId` TEXT NOT NULL, `serverId` TEXT, `userId` TEXT NOT NULL, `articleId` TEXT, `title` TEXT NOT NULL, `bodyHtml` TEXT NOT NULL, `plainText` TEXT NOT NULL, `tags` TEXT NOT NULL, `isVaultNote` INTEGER NOT NULL, `isPinned` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`localId`))",
+        "fields": [
+          {
+            "fieldPath": "localId",
+            "columnName": "localId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "articleId",
+            "columnName": "articleId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bodyHtml",
+            "columnName": "bodyHtml",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plainText",
+            "columnName": "plainText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isVaultNote",
+            "columnName": "isVaultNote",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPinned",
+            "columnName": "isPinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSynced",
+            "columnName": "isSynced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "localId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_notes_articleId",
+            "unique": false,
+            "columnNames": [
+              "articleId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_articleId` ON `${TABLE_NAME}` (`articleId`)"
+          },
+          {
+            "name": "index_notes_isVaultNote",
+            "unique": false,
+            "columnNames": [
+              "isVaultNote"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_isVaultNote` ON `${TABLE_NAME}` (`isVaultNote`)"
+          },
+          {
+            "name": "index_notes_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "keywords",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`keywordId` TEXT NOT NULL, `keyword` TEXT NOT NULL, `notifyOnMatch` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`keywordId`))",
+        "fields": [
+          {
+            "fieldPath": "keywordId",
+            "columnName": "keywordId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keyword",
+            "columnName": "keyword",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notifyOnMatch",
+            "columnName": "notifyOnMatch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSynced",
+            "columnName": "isSynced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "keywordId"
+          ]
+        }
+      },
+      {
+        "tableName": "categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`slug` TEXT NOT NULL, `nameEn` TEXT NOT NULL, `nameZu` TEXT NOT NULL, `nameAf` TEXT NOT NULL, `isSubscribed` INTEGER NOT NULL, PRIMARY KEY(`slug`))",
+        "fields": [
+          {
+            "fieldPath": "slug",
+            "columnName": "slug",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameEn",
+            "columnName": "nameEn",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameZu",
+            "columnName": "nameZu",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameAf",
+            "columnName": "nameAf",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSubscribed",
+            "columnName": "isSubscribed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "slug"
+          ]
+        }
+      },
+      {
+        "tableName": "notifications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`notificationId` TEXT NOT NULL, `title` TEXT NOT NULL, `body` TEXT NOT NULL, `type` TEXT NOT NULL, `articleId` TEXT, `matchedKeyword` TEXT, `isRead` INTEGER NOT NULL, `receivedAt` INTEGER NOT NULL, PRIMARY KEY(`notificationId`))",
+        "fields": [
+          {
+            "fieldPath": "notificationId",
+            "columnName": "notificationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "articleId",
+            "columnName": "articleId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "matchedKeyword",
+            "columnName": "matchedKeyword",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isRead",
+            "columnName": "isRead",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAt",
+            "columnName": "receivedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "notificationId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_notifications_receivedAt",
+            "unique": false,
+            "columnNames": [
+              "receivedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notifications_receivedAt` ON `${TABLE_NAME}` (`receivedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "download_slots",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`articleId` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `downloadedAt` INTEGER NOT NULL, PRIMARY KEY(`articleId`))",
+        "fields": [
+          {
+            "fieldPath": "articleId",
+            "columnName": "articleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeBytes",
+            "columnName": "sizeBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "downloadedAt",
+            "columnName": "downloadedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "articleId"
+          ]
+        }
+      },
+      {
+        "tableName": "sync_queue",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`queueId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `entityType` TEXT NOT NULL, `entityLocalId` TEXT NOT NULL, `operation` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `queuedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "queueId",
+            "columnName": "queueId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityLocalId",
+            "columnName": "entityLocalId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operation",
+            "columnName": "operation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "queuedAt",
+            "columnName": "queuedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "queueId"
+          ]
+        }
+      },
+      {
+        "tableName": "sync_meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `lastSyncTimestamp` INTEGER NOT NULL, `pendingCount` INTEGER NOT NULL, `lastSyncStatus` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncTimestamp",
+            "columnName": "lastSyncTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendingCount",
+            "columnName": "pendingCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncStatus",
+            "columnName": "lastSyncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`userId` TEXT NOT NULL, `email` TEXT NOT NULL, `displayName` TEXT NOT NULL, `photoUrl` TEXT, `preferredLanguage` TEXT NOT NULL, `biometricEnabled` INTEGER NOT NULL, `lastLoginAt` INTEGER NOT NULL, PRIMARY KEY(`userId`))",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photoUrl",
+            "columnName": "photoUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preferredLanguage",
+            "columnName": "preferredLanguage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "biometricEnabled",
+            "columnName": "biometricEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLoginAt",
+            "columnName": "lastLoginAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "userId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '518fb6fdf7a3ce9c9d373ecb02f6d171')"
+    ]
+  }
+}
