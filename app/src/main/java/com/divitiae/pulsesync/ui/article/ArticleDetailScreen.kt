@@ -29,6 +29,22 @@ package com.divitiae.pulsesync.ui.article
  * Android Developers (2026) Preview your UI with composable previews. [online]
  * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
  * [Accessed 20 September 2026].
+ *
+ * The ViewModel-backed screen (viewModel() with a factory, collectAsState on a
+ * StateFlow, LaunchedEffect for one-shot events) and the segmented DualMode
+ * toggle were adapted from:
+ *
+ * Android Developers (2026) ViewModel and State in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/state#viewmodel-state
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Side-effects in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/side-effects
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Segmented button. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/segmented-button
+ * [Accessed 20 September 2026].
  * ---------------------------------------------------------------------
  */
 
@@ -49,25 +65,27 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.divitiae.pulsesync.R
+import com.divitiae.pulsesync.ui.common.UiStateBoundary
+import com.divitiae.pulsesync.ui.common.toMessageRes
 import com.divitiae.pulsesync.ui.components.PulseSyncDimens
 import com.divitiae.pulsesync.ui.feed.ArticleUi
 import com.divitiae.pulsesync.ui.feed.FeedSampleData
 import com.divitiae.pulsesync.ui.feed.NoteSyncState
-import com.divitiae.pulsesync.ui.feed.NoteUi
 import com.divitiae.pulsesync.ui.feed.ResourceLinkUi
+import com.divitiae.pulsesync.ui.feed.SummaryMode
 import com.divitiae.pulsesync.ui.theme.PulseSyncTheme
 import com.divitiae.pulsesync.ui.util.ExternalLinks
 import kotlinx.coroutines.launch
@@ -75,113 +93,117 @@ import kotlinx.coroutines.launch
 /**
  * Article Detail & Interactive Workspace (Figma 6:35, dark 29:168).
  *
- * Hosts User Defined Features 2 and 3: the Extracted Resource Links Panel
- * (explicit intents) and the Embedded Contextual Notes Editor (title, body,
- * tag chips; empty title/body validation → red highlight + Snackbar; blank or
- * duplicate tag → Toast). Note persistence is delegated to [onSaveNote] for
- * Member 4's ViewModel.
+ * Hosts all three User Defined Features. The layout and the notes editor UX
+ * (title, body, tag chips; empty title/body validation → red highlight +
+ * Snackbar; blank or duplicate tag → Toast) are Member 2's; Member 4 backs the
+ * screen with [ArticleDetailViewModel] so that:
+ *
+ *  - User Defined 1: [SummaryModeToggle] swaps `aiSummary.detailed` ↔
+ *    `aiSummary.condensed` in memory.
+ *  - User Defined 2: resource rows fire explicit ACTION_VIEW intents via
+ *    [ExternalLinks], with a Snackbar when no app can handle the link.
+ *  - User Defined 3: Save Note runs a coroutine that writes Room and POSTs
+ *    `/api/v1/notes`; the Synced / Saved-locally chip reflects the result.
+ *  - Robustness: [UiStateBoundary] renders Loading / Error / Success so a
+ *    missing article never crashes the screen.
  */
 @Composable
 fun ArticleDetailScreen(
-    article: ArticleUi,
+    articleId: String,
     onBack: () -> Unit,
-    onToggleSave: (ArticleUi) -> Unit,
-    onSaveNote: (ArticleUi, NoteUi) -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: ArticleDetailViewModel = viewModel(
+        key = "article-$articleId",
+        factory = ArticleDetailViewModel.factory(articleId),
+    ),
 ) {
     val context = LocalContext.current
     // Adapted from: Android Developers (2026) Snackbar. https://developer.android.com/develop/ui/compose/components/snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var isSaved by rememberSaveable(article.id) { mutableStateOf(article.isSaved) }
-    var noteTitle by rememberSaveable(article.id) { mutableStateOf(article.note?.title.orEmpty()) }
-    var noteText by rememberSaveable(article.id) { mutableStateOf(article.note?.text.orEmpty()) }
-    var noteTags by rememberSaveable(article.id) { mutableStateOf(article.note?.tags.orEmpty()) }
-    var tagDraft by rememberSaveable(article.id) { mutableStateOf("") }
-    var syncState by rememberSaveable(article.id) { mutableStateOf(article.note?.syncState ?: NoteSyncState.LOCAL) }
-    var titleError by rememberSaveable(article.id) { mutableStateOf(false) }
-    var bodyError by rememberSaveable(article.id) { mutableStateOf(false) }
+    val state by viewModel.uiState.collectAsState()
+    val noteEvent by viewModel.noteEvents.collectAsState()
 
     val emptyNoteMessage = stringResource(R.string.article_notes_empty_error)
-    val noteSavedMessage = stringResource(R.string.article_notes_saved)
+    val noteSyncedMessage = stringResource(R.string.article_notes_saved)
+    val noteLocalMessage = stringResource(R.string.article_notes_saved_local)
+    val noteFailedTemplate = stringResource(R.string.article_notes_save_failed)
+    val noteFailedDetail = (noteEvent as? NoteSaveEvent.Failed)?.let { stringResource(it.error.toMessageRes()) }
     val noAppMessage = stringResource(R.string.article_no_app_for_link)
 
-    ArticleDetailContent(
-        article = article.copy(isSaved = isSaved),
-        noteTitle = noteTitle,
-        onNoteTitleChange = {
-            noteTitle = it
-            titleError = false // Clear the highlight as soon as the user types.
-        },
-        noteText = noteText,
-        onNoteTextChange = {
-            noteText = it
-            bodyError = false
-        },
-        noteTags = noteTags,
-        tagDraft = tagDraft,
-        onTagDraftChange = { tagDraft = it },
-        onAddTag = {
-            val tag = tagDraft.trim()
-            when {
-                tag.isEmpty() -> {
-                    // Adapted from: Android Developers (2026) Toasts overview. https://developer.android.com/guide/topics/ui/notifiers/toasts
-                    Toast.makeText(context, R.string.article_notes_tag_blank_error, Toast.LENGTH_SHORT).show()
-                }
-                noteTags.any { it.equals(tag, ignoreCase = true) } -> {
-                    Toast.makeText(context, R.string.article_notes_tag_duplicate_error, Toast.LENGTH_SHORT).show()
-                }
-                else -> {
-                    noteTags = noteTags + tag
-                    tagDraft = ""
-                }
-            }
-        },
-        onRemoveTag = { tag -> noteTags = noteTags - tag },
-        noteSyncState = syncState,
-        titleError = titleError,
-        bodyError = bodyError,
-        snackbarHostState = snackbarHostState,
-        onBack = onBack,
-        onToggleSave = {
-            isSaved = !isSaved
-            onToggleSave(article.copy(isSaved = isSaved))
-        },
-        onOpenSource = {
-            if (!ExternalLinks.open(context, article.sourceUrl)) {
-                scope.launch { snackbarHostState.showSnackbar(noAppMessage) }
-            }
-        },
-        onOpenResource = { resource ->
-            if (!ExternalLinks.open(context, resource.url, resource.type)) {
-                scope.launch { snackbarHostState.showSnackbar(noAppMessage) }
-            }
-        },
-        onSaveNote = {
-            titleError = noteTitle.isBlank()
-            bodyError = noteText.isBlank()
-            if (titleError || bodyError) {
-                scope.launch { snackbarHostState.showSnackbar(emptyNoteMessage) }
-            } else {
-                val note = NoteUi(
-                    title = noteTitle.trim(),
-                    text = noteText.trim(),
-                    tags = noteTags,
-                    syncState = NoteSyncState.LOCAL,
-                )
-                syncState = NoteSyncState.LOCAL
-                onSaveNote(article, note)
-                scope.launch { snackbarHostState.showSnackbar(noteSavedMessage) }
-            }
-        },
+    // One-shot feedback for the asynchronous note save.
+    // Adapted from: Android Developers (2026) Side-effects in Compose. https://developer.android.com/develop/ui/compose/side-effects
+    LaunchedEffect(noteEvent) {
+        val text = when (noteEvent) {
+            NoteSaveEvent.Empty -> emptyNoteMessage
+            NoteSaveEvent.Synced -> noteSyncedMessage
+            NoteSaveEvent.SavedLocally -> noteLocalMessage
+            is NoteSaveEvent.Failed -> noteFailedTemplate.format(noteFailedDetail ?: "")
+            null -> null
+        }
+        if (text != null) {
+            snackbarHostState.showSnackbar(text)
+            viewModel.consumeNoteEvent()
+        }
+    }
+
+    UiStateBoundary(
+        state = state,
+        onRetry = onBack, // "Article not found" is not retryable; the pane offers a way out.
         modifier = modifier,
-    )
+    ) { detail ->
+        ArticleDetailContent(
+            article = detail.article,
+            summaryMode = detail.summaryMode,
+            visibleSummary = detail.visibleSummary,
+            onSummaryModeChange = viewModel::setSummaryMode,
+            noteTitle = detail.noteTitle,
+            onNoteTitleChange = viewModel::onNoteTitleChange,
+            noteText = detail.noteText,
+            onNoteTextChange = viewModel::onNoteTextChange,
+            noteTags = detail.noteTags,
+            tagDraft = detail.tagDraft,
+            onTagDraftChange = viewModel::onTagDraftChange,
+            onAddTag = {
+                when (viewModel.addTag()) {
+                    // Adapted from: Android Developers (2026) Toasts overview. https://developer.android.com/guide/topics/ui/notifiers/toasts
+                    TagResult.BLANK ->
+                        Toast.makeText(context, R.string.article_notes_tag_blank_error, Toast.LENGTH_SHORT).show()
+                    TagResult.DUPLICATE ->
+                        Toast.makeText(context, R.string.article_notes_tag_duplicate_error, Toast.LENGTH_SHORT).show()
+                    TagResult.ADDED -> Unit
+                }
+            },
+            onRemoveTag = viewModel::removeTag,
+            noteSyncState = detail.noteSyncState,
+            titleError = detail.titleError,
+            bodyError = detail.bodyError,
+            isSavingNote = detail.isSavingNote,
+            snackbarHostState = snackbarHostState,
+            onBack = onBack,
+            onToggleSave = viewModel::toggleSave,
+            onOpenSource = {
+                if (!ExternalLinks.open(context, detail.article.sourceUrl)) {
+                    scope.launch { snackbarHostState.showSnackbar(noAppMessage) }
+                }
+            },
+            onOpenResource = { resource ->
+                if (!ExternalLinks.open(context, resource.url, resource.type)) {
+                    scope.launch { snackbarHostState.showSnackbar(noAppMessage) }
+                }
+            },
+            onSaveNote = viewModel::saveNote,
+        )
+    }
 }
 
 @Composable
 fun ArticleDetailContent(
     article: ArticleUi,
+    summaryMode: SummaryMode,
+    visibleSummary: List<String>,
+    onSummaryModeChange: (SummaryMode) -> Unit,
     noteTitle: String,
     onNoteTitleChange: (String) -> Unit,
     noteText: String,
@@ -194,6 +216,7 @@ fun ArticleDetailContent(
     noteSyncState: NoteSyncState,
     titleError: Boolean,
     bodyError: Boolean,
+    isSavingNote: Boolean,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onToggleSave: () -> Unit,
@@ -232,18 +255,30 @@ fun ArticleDetailContent(
             AiDisclosureNotice()
             OfflineBadge(slotsUsed = article.offlineSlotsUsed, slotsTotal = article.offlineSlotsTotal)
 
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                article.body.forEach { paragraph ->
+            // User Defined Feature 1 — DualMode toggle + whichever aiSummary array is selected.
+            SummaryModeToggle(mode = summaryMode, onModeChange = onSummaryModeChange)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(
+                    if (summaryMode == SummaryMode.DETAILED) 20.dp else 8.dp,
+                ),
+            ) {
+                visibleSummary.forEach { line ->
                     Text(
-                        text = paragraph,
+                        text = if (summaryMode == SummaryMode.CONDENSED) {
+                            stringResource(R.string.feed_bullet, line)
+                        } else {
+                            line
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
             }
 
+            // User Defined Feature 2 — one explicit intent per extracted link.
             ResourceLinksPanel(resources = article.resources, onOpen = onOpenResource)
 
+            // User Defined Feature 3 — contextual notes editor (Member 2's card, unchanged).
             NotesEditorCard(
                 title = noteTitle,
                 onTitleChange = onNoteTitleChange,
@@ -258,8 +293,10 @@ fun ArticleDetailContent(
                 isTitleError = titleError,
                 isBodyError = bodyError,
                 onSave = {
-                    focusManager.clearFocus()
-                    onSaveNote()
+                    if (!isSavingNote) {
+                        focusManager.clearFocus()
+                        onSaveNote()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -281,6 +318,9 @@ private fun ArticleDetailPreview() {
     PulseSyncTheme {
         ArticleDetailContent(
             article = article,
+            summaryMode = SummaryMode.DETAILED,
+            visibleSummary = article.summaryFor(SummaryMode.DETAILED),
+            onSummaryModeChange = {},
             noteTitle = article.note?.title.orEmpty(),
             onNoteTitleChange = {},
             noteText = article.note?.text.orEmpty(),
@@ -293,6 +333,40 @@ private fun ArticleDetailPreview() {
             noteSyncState = NoteSyncState.SYNCED,
             titleError = false,
             bodyError = false,
+            isSavingNote = false,
+            snackbarHostState = SnackbarHostState(),
+            onBack = {},
+            onToggleSave = {},
+            onOpenSource = {},
+            onOpenResource = {},
+            onSaveNote = {},
+        )
+    }
+}
+
+@Preview(name = "Article · Condensed", showBackground = true, widthDp = 360, heightDp = 1000)
+@Composable
+private fun ArticleDetailCondensedPreview() {
+    val article = FeedSampleData.articles.first()
+    PulseSyncTheme {
+        ArticleDetailContent(
+            article = article,
+            summaryMode = SummaryMode.CONDENSED,
+            visibleSummary = article.summaryFor(SummaryMode.CONDENSED),
+            onSummaryModeChange = {},
+            noteTitle = "",
+            onNoteTitleChange = {},
+            noteText = "",
+            onNoteTextChange = {},
+            noteTags = emptyList(),
+            tagDraft = "",
+            onTagDraftChange = {},
+            onAddTag = {},
+            onRemoveTag = {},
+            noteSyncState = NoteSyncState.LOCAL,
+            titleError = false,
+            bodyError = false,
+            isSavingNote = false,
             snackbarHostState = SnackbarHostState(),
             onBack = {},
             onToggleSave = {},
@@ -310,6 +384,9 @@ private fun ArticleDetailErrorPreview() {
     PulseSyncTheme {
         ArticleDetailContent(
             article = article,
+            summaryMode = SummaryMode.DETAILED,
+            visibleSummary = article.summaryFor(SummaryMode.DETAILED),
+            onSummaryModeChange = {},
             noteTitle = "",
             onNoteTitleChange = {},
             noteText = "",
@@ -322,6 +399,7 @@ private fun ArticleDetailErrorPreview() {
             noteSyncState = NoteSyncState.LOCAL,
             titleError = true,
             bodyError = true,
+            isSavingNote = false,
             snackbarHostState = SnackbarHostState(),
             onBack = {},
             onToggleSave = {},
