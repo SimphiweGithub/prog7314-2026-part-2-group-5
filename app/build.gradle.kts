@@ -2,10 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    // TODO(Member 3): uncomment once app/google-services.json is added by the team.
-    // Applying this plugin without the config file fails the build, so it stays
-    // off until Firebase is provisioned. Firebase libraries still compile without it.
-    // alias(libs.plugins.google.services)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -15,7 +12,7 @@ android {
     defaultConfig {
         applicationId = "com.divitiae.pulsesync"
         minSdk = 27
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
 
