@@ -1,5 +1,33 @@
 package com.divitiae.pulsesync.ui.article
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The BasicTextField decoration-box pattern, error semantics, FlowRow tag chips and layout composition in this file were adapted from:
+ *
+ * Android Developers (2026) Configure text fields. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/text/user-input
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Flow layouts in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/layouts/flow
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Semantics in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/accessibility/semantics
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose layout basics. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/layouts/basics
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose modifiers. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/modifiers
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -7,8 +35,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,11 +46,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Description
@@ -48,6 +82,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.divitiae.pulsesync.R
@@ -271,16 +307,26 @@ private fun ResourceType.icon(): ImageVector = when (this) {
 
 /**
  * User Defined Feature 3: Embedded Contextual Notes Editor
- * (Figma 7:49 / 29:205). [isError] paints the red validation highlight
- * when a save is attempted with empty content.
+ * (Figma 7:49 / 29:205). Title field, body field, removable tag chips with
+ * an "+ Add tag" input, and the Save button. [isTitleError] / [isBodyError]
+ * paint the red validation highlight on the offending field when a save is
+ * attempted with empty content. Tag validation feedback (Toast) is owned by
+ * the stateful caller so this composable stays stateless.
  */
 @Composable
 fun NotesEditorCard(
+    title: String,
+    onTitleChange: (String) -> Unit,
     text: String,
     onTextChange: (String) -> Unit,
-    tag: String?,
+    tags: List<String>,
+    tagDraft: String,
+    onTagDraftChange: (String) -> Unit,
+    onAddTag: () -> Unit,
+    onRemoveTag: (String) -> Unit,
     syncState: NoteSyncState,
-    isError: Boolean,
+    isTitleError: Boolean,
+    isBodyError: Boolean,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -318,41 +364,23 @@ fun NotesEditorCard(
                 SyncChip(syncState = syncState)
             }
 
-            BasicTextField(
+            NoteField(
+                value = title,
+                onValueChange = onTitleChange,
+                placeholder = stringResource(R.string.article_notes_title_placeholder),
+                isError = isTitleError,
+                singleLine = true,
+            )
+
+            NoteField(
                 value = text,
                 onValueChange = onTextChange,
-                textStyle = MaterialTheme.typography.bodySmall.copy(
-                    color = onSurface.copy(alpha = 0.8f),
-                    lineHeight = 20.sp,
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .semantics { if (isError) error("Note content cannot be empty.") },
-            ) { innerTextField ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(minHeight = 64.dp)
-                        .background(
-                            if (isError) errorColor.copy(alpha = 0.10f) else onSurface.copy(alpha = 0.06f),
-                            ChipShape,
-                        )
-                        .then(if (isError) Modifier.border(1.dp, errorColor, ChipShape) else Modifier)
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.TopStart,
-                ) {
-                    if (text.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.article_notes_placeholder),
-                            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
-                            color = onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-            if (isError) {
+                placeholder = stringResource(R.string.article_notes_placeholder),
+                isError = isBodyError,
+                singleLine = false,
+                minHeight = 64.dp,
+            )
+            if (isTitleError || isBodyError) {
                 Text(
                     text = stringResource(R.string.article_notes_empty_error),
                     style = MaterialTheme.typography.bodySmall,
@@ -360,30 +388,36 @@ fun NotesEditorCard(
                 )
             }
 
-            Row(
+            // Adapted from: Android Developers (2026) Flow layouts in Compose. https://developer.android.com/develop/ui/compose/layouts/flow
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .background(onSurface.copy(alpha = 0.08f), ChipShape)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Label,
-                        contentDescription = null,
-                        tint = onSurface,
-                        modifier = Modifier.size(12.dp),
-                    )
+                if (tags.isEmpty()) {
                     Text(
-                        text = tag ?: stringResource(R.string.article_notes_no_tag),
+                        text = stringResource(R.string.article_notes_no_tag),
                         style = MaterialTheme.typography.bodySmall,
-                        color = onSurface,
+                        color = onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(vertical = 4.dp),
                     )
                 }
+                tags.forEach { tag ->
+                    NoteTagChip(tag = tag, onRemove = { onRemoveTag(tag) })
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AddTagField(
+                    value = tagDraft,
+                    onValueChange = onTagDraftChange,
+                    onSubmit = onAddTag,
+                    modifier = Modifier.weight(1f),
+                )
                 Surface(
                     onClick = onSave,
                     shape = ChipShape,
@@ -404,6 +438,140 @@ fun NotesEditorCard(
                         Text(text = stringResource(R.string.article_notes_save), style = MaterialTheme.typography.bodySmall)
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Shared note input styling used by both the title and body fields.
+ * Adapted from: Android Developers (2026) Configure text fields.
+ * https://developer.android.com/develop/ui/compose/text/user-input
+ */
+@Composable
+private fun NoteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    isError: Boolean,
+    singleLine: Boolean,
+    modifier: Modifier = Modifier,
+    minHeight: Dp = 36.dp,
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val errorColor = MaterialTheme.colorScheme.error
+    val emptyError = stringResource(R.string.article_notes_empty_error)
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = singleLine,
+        textStyle = MaterialTheme.typography.bodySmall.copy(
+            color = onSurface.copy(alpha = 0.8f),
+            lineHeight = 20.sp,
+        ),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { if (isError) error(emptyError) },
+    ) { innerTextField ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = minHeight)
+                .background(
+                    if (isError) errorColor.copy(alpha = 0.10f) else onSurface.copy(alpha = 0.06f),
+                    ChipShape,
+                )
+                .then(if (isError) Modifier.border(1.dp, errorColor, ChipShape) else Modifier)
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart,
+        ) {
+            if (value.isEmpty()) {
+                Text(
+                    text = placeholder,
+                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
+                    color = onSurface.copy(alpha = 0.4f),
+                )
+            }
+            innerTextField()
+        }
+    }
+}
+
+/** Removable tag chip: label icon, tag text and a close icon. */
+@Composable
+private fun NoteTagChip(tag: String, onRemove: () -> Unit, modifier: Modifier = Modifier) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = modifier
+            .background(onSurface.copy(alpha = 0.08f), ChipShape)
+            .padding(start = 8.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Label,
+            contentDescription = null,
+            tint = onSurface,
+            modifier = Modifier.size(12.dp),
+        )
+        Text(text = tag, style = MaterialTheme.typography.bodySmall, color = onSurface)
+        Icon(
+            imageVector = Icons.Rounded.Close,
+            contentDescription = stringResource(R.string.article_notes_remove_tag, tag),
+            tint = onSurface,
+            modifier = Modifier
+                .size(14.dp)
+                .clickable(onClick = onRemove),
+        )
+    }
+}
+
+/** 36 dp "+ Add tag" input. Submits on IME done or by tapping the plus icon. */
+@Composable
+private fun AddTagField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodySmall.copy(color = onSurface),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onSubmit() }),
+        modifier = modifier.height(36.dp),
+    ) { innerTextField ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .background(onSurface.copy(alpha = 0.06f), ChipShape)
+                .padding(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = stringResource(R.string.article_notes_add_tag),
+                tint = onSurface,
+                modifier = Modifier
+                    .size(16.dp)
+                    .clickable(onClick = onSubmit),
+            )
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.article_notes_add_tag_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onSurface.copy(alpha = 0.4f),
+                    )
+                }
+                innerTextField()
             }
         }
     }

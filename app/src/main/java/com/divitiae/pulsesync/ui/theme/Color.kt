@@ -1,5 +1,21 @@
 package com.divitiae.pulsesync.ui.theme
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The brand colour constants in this file are mapped onto Material 3 colour roles as described in:
+ *
+ * Android Developers (2026) Material Design 3 in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/designsystems/material3
+ * [Accessed 20 September 2026].
+ *
+ * Google (n.d.) Color roles - Material Design 3. [online]
+ * Available at: https://m3.material.io/styles/color/roles
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.ui.graphics.Color
 
 // PulseSync brand palette, mirrored from the Figma variables

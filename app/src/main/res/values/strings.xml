@@ -71,10 +71,16 @@
     <string name="article_resources_empty">No links were found in this article.</string>
     <string name="article_no_app_for_link">No app on this device can open that link.</string>
     <string name="article_notes_title">My Notes</string>
+    <string name="article_notes_title_placeholder">Note title</string>
     <string name="article_notes_placeholder">Add a note about this article…</string>
     <string name="article_notes_synced">Synced to Cloud</string>
     <string name="article_notes_local">Saved locally</string>
-    <string name="article_notes_no_tag">No tag</string>
+    <string name="article_notes_no_tag">No tags yet</string>
+    <string name="article_notes_add_tag_hint">+ Add tag</string>
+    <string name="article_notes_add_tag">Add tag</string>
+    <string name="article_notes_remove_tag">Remove tag %1$s</string>
+    <string name="article_notes_tag_blank_error">Tag cannot be empty.</string>
+    <string name="article_notes_tag_duplicate_error">Tag already added.</string>
     <string name="article_notes_save">Save Note</string>
     <string name="article_notes_saved">Note saved.</string>
     <string name="article_notes_empty_error">Note content cannot be empty.</string>

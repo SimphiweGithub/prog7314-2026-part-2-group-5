@@ -36,8 +36,9 @@ fun ResourceLink.toUi(): ResourceLinkUi =
     ResourceLinkUi(title = label, url = url, type = kind.toUi())
 
 fun Note.toUi(): NoteUi = NoteUi(
+    title = title,
     text = plainText.ifBlank { bodyHtml },
-    tag = tags.firstOrNull(),
+    tags = tags,
     syncState = if (isSynced) NoteSyncState.SYNCED else NoteSyncState.LOCAL,
 )
 

@@ -1,5 +1,17 @@
 package com.divitiae.pulsesync.ui.navigation
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The NavHost graph, route arguments, popUpTo/launchSingleTop options and back-stack handling in this file were adapted from:
+ *
+ * Android Developers (2026) Navigation with Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/navigation
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -44,6 +56,7 @@ fun PulseSyncNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.SIGN_IN,
 ) {
+    // Adapted from: Android Developers (2026) Navigation with Compose - navigate with options. https://developer.android.com/develop/ui/compose/navigation
     fun switchTab(route: String) {
         navController.navigate(route) {
             popUpTo(Routes.FEED) { saveState = true }
@@ -114,6 +127,7 @@ fun PulseSyncNavHost(
         }
         composable(
             route = Routes.ARTICLE,
+            // Adapted from: Android Developers (2026) Navigation with Compose - navigate with arguments. https://developer.android.com/develop/ui/compose/navigation
             arguments = listOf(navArgument(Routes.ARTICLE_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
             val articleId = backStackEntry.arguments?.getString(Routes.ARTICLE_ID_ARG)

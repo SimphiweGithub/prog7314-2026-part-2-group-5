@@ -1,5 +1,17 @@
 package com.divitiae.pulsesync.ui.feed
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The singleton sample-data object in this file follows the Kotlin object declaration documented in:
+ *
+ * JetBrains (n.d.) Object declarations and expressions. [online]
+ * Available at: https://kotlinlang.org/docs/object-declarations.html
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 /**
  * Placeholder content mirroring the Figma Feed Dashboard frames. Used by
  * previews and by the prototype until the Retrofit-backed ViewModel lands.
@@ -56,9 +68,10 @@ object FeedSampleData {
             offlineSlotsUsed = 3,
             offlineSlotsTotal = 5,
             note = NoteUi(
+                title = "NSFAS application checklist",
                 text = "Deadline is in 3 weeks — need certified ID copy + latest results. Ask study group if " +
                     "anyone has done means test already.",
-                tag = "Bursaries 2026",
+                tags = listOf("Bursaries 2026", "To-do"),
                 syncState = NoteSyncState.SYNCED,
             ),
         ),

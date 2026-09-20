@@ -1,5 +1,25 @@
 package com.divitiae.pulsesync.ui.feed
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The immutable UI-state data classes and enums in this file follow the Kotlin conventions documented in:
+ *
+ * JetBrains (n.d.) Data classes. [online]
+ * Available at: https://kotlinlang.org/docs/data-classes.html
+ * [Accessed 20 September 2026].
+ *
+ * JetBrains (n.d.) Enum classes. [online]
+ * Available at: https://kotlinlang.org/docs/enum-classes.html
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) State and Jetpack Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/state
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 /**
  * UI-facing models for the Feed Dashboard. These describe exactly what the
  * screen renders; Member 4's ViewModel maps the API/domain models onto them.
@@ -39,8 +59,10 @@ data class ResourceLinkUi(
 enum class ResourceType { PDF, PORTAL, WEB, VIDEO }
 
 data class NoteUi(
+    val title: String,
     val text: String,
-    val tag: String? = null,
+    /** User-managed tags, rendered as removable chips in the notes editor. */
+    val tags: List<String> = emptyList(),
     val syncState: NoteSyncState = NoteSyncState.LOCAL,
 )
 

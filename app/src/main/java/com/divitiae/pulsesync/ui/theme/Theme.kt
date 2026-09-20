@@ -1,5 +1,25 @@
 package com.divitiae.pulsesync.ui.theme
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The light/dark colour schemes, MaterialTheme wrapper and CompositionLocal flag in this file were adapted from:
+ *
+ * Android Developers (2026) Material Design 3 in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/designsystems/material3
+ * [Accessed 20 September 2026].
+ *
+ * Google (n.d.) Color roles - Material Design 3. [online]
+ * Available at: https://m3.material.io/styles/color/roles
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Locally scoped data with CompositionLocal. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/compositionlocal
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -14,6 +34,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
  * 15 %, 20 %) are derived from onSurface at the component level so they stay
  * correct in both schemes.
  */
+// Adapted from: Android Developers (2026) Material Design 3 in Compose - colour scheme. https://developer.android.com/develop/ui/compose/designsystems/material3
 private val LightColorScheme = lightColorScheme(
     primary = Navy,
     onPrimary = Cream,

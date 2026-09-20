@@ -1,5 +1,21 @@
 package com.divitiae.pulsesync.ui.settings
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The sealed-interface result type and data objects in this file follow the Kotlin conventions documented in:
+ *
+ * JetBrains (n.d.) Sealed classes and interfaces. [online]
+ * Available at: https://kotlinlang.org/docs/sealed-classes.html
+ * [Accessed 20 September 2026].
+ *
+ * JetBrains (n.d.) Object declarations and expressions. [online]
+ * Available at: https://kotlinlang.org/docs/object-declarations.html
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 /**
  * Client-side checks for the tracking-keyword input in Settings. Mirrors the
  * pattern in AuthValidation: the UI decides how to surface a rejection, this
@@ -7,6 +23,7 @@ package com.divitiae.pulsesync.ui.settings
  */
 internal object KeywordValidation {
 
+    // Adapted from: JetBrains (n.d.) Sealed classes and interfaces. https://kotlinlang.org/docs/sealed-classes.html
     sealed interface Result {
         /** Keyword is acceptable; [keyword] is the normalised value to store. */
         data class Valid(val keyword: String) : Result

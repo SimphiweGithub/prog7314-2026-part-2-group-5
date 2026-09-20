@@ -1,5 +1,17 @@
 package com.divitiae.pulsesync.ui.auth
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The e-mail validation in this file uses the Android Patterns.EMAIL_ADDRESS matcher as documented in:
+ *
+ * Android Developers (2026) Patterns. [online]
+ * Available at: https://developer.android.com/reference/android/util/Patterns
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import android.util.Patterns
 
 /**
@@ -10,6 +22,7 @@ internal object AuthValidation {
     const val MIN_PASSWORD_LENGTH = 8
 
     fun isEmailValid(email: String): Boolean =
+        // Adapted from: Android Developers (2026) Patterns. https://developer.android.com/reference/android/util/Patterns
         email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
 
     fun isPasswordLongEnough(password: String): Boolean =
