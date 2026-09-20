@@ -59,3 +59,36 @@ class AuthViewModel(
             _hasExistingSession.value = tokenStore.accessToken != null
         }
     }
+
+    /** Step 2: the Google Sign-In intent returned an ID token. */
+    fun onGoogleIdToken(googleIdToken: String) {
+        if (_signInState.value is UiState.Loading) return // ignore double taps
+        _signInState.value = UiState.Loading
+        viewModelScope.launch {
+            val fcmToken = fetchFcmTokenOrNull()
+            _signInState.value = authRepository
+                .signInWithGoogleIdToken(googleIdToken, fcmToken)
+                .toUiState()
+        }
+    }
+
+    /**
+     * The intent finished without a token. [reason] null means the user simply
+     * cancelled the account picker — that is not an error, so we go back to idle.
+     */
+    fun onGoogleSignInFailed(reason: GoogleSignInFailure?) {
+        _signInState.value = when (reason) {
+            null -> null
+            else -> UiState.Error(
+                message = reason.detail,
+                error = AppError.Unauthorized(reason.detail),
+                retryable = reason != GoogleSignInFailure.NOT_CONFIGURED,
+            )
+        }
+        if (reason != null) _events.value = AuthEvent.GoogleFailure(reason)
+    }
+
+    fun onEmailSignInRequested() {
+        // The backend contract exposes Google SSO only; surface that instead of faking a login.
+        _events.value = AuthEvent.EmailNotAvailable
+    }
