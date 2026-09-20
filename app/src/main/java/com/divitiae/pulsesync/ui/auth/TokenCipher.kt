@@ -10,6 +10,12 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
+ * Code Attribution
+ * This file was assited with Claude.AI
+ * https://claude.ai/
+ * **/
+
+/**
  * AES-256-GCM encryption backed by the Android Keystore. The key never leaves
  * the secure hardware (or the TEE-backed keystore on devices without a
  * StrongBox), so a JWT written to disk cannot be read by another app or by
@@ -59,3 +65,22 @@ class TokenCipher(private val alias: String = DEFAULT_ALIAS) {
             alias,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
         )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            // Not user-auth bound on purpose: the OkHttp interceptor must be
+            // able to read the token in the background without a biometric prompt.
+            .setUserAuthenticationRequired(false)
+            .build()
+        generator.init(spec)
+        return generator.generateKey()
+    }
+
+    companion object {
+        const val DEFAULT_ALIAS = "pulsesync_jwt_key"
+        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val TRANSFORMATION = "AES/GCM/NoPadding"
+        private const val IV_LENGTH_BYTES = 12
+        private const val TAG_LENGTH_BITS = 128
+    }
+}
