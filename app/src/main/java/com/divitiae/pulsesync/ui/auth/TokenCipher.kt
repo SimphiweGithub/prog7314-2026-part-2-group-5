@@ -34,3 +34,28 @@ class TokenCipher(private val alias: String = DEFAULT_ALIAS) {
         val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
         return Base64.encodeToString(iv + cipherText, Base64.NO_WRAP)
     }
+
+    /**
+     * Returns null instead of throwing when the payload is corrupt or the key
+     * was rotated/invalidated (e.g. the user removed their lock screen with an
+     * auth-bound key). Callers treat null as "signed out".
+     */
+    fun decrypt(encoded: String): String? = try {
+        val bytes = Base64.decode(encoded, Base64.NO_WRAP)
+        if (bytes.size <= IV_LENGTH_BYTES) return null
+        val iv = bytes.copyOfRange(0, IV_LENGTH_BYTES)
+        val cipherText = bytes.copyOfRange(IV_LENGTH_BYTES, bytes.size)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(TAG_LENGTH_BITS, iv))
+        String(cipher.doFinal(cipherText), Charsets.UTF_8)
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun getOrCreateKey(): SecretKey {
+        (keyStore.getKey(alias, null) as? SecretKey)?.let { return it }
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        val spec = KeyGenParameterSpec.Builder(
+            alias,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+        )
