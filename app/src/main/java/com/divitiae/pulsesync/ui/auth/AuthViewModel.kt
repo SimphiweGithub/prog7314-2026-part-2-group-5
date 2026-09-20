@@ -92,3 +92,56 @@ class AuthViewModel(
         // The backend contract exposes Google SSO only; surface that instead of faking a login.
         _events.value = AuthEvent.EmailNotAvailable
     }
+    /** Call after showing an error so the same Snackbar is not re-shown on recomposition. */
+    fun consumeError() {
+        _signInState.update { if (it is UiState.Error) null else it }
+    }
+
+    fun consumeEvent() {
+        _events.value = null
+    }
+
+    fun signOut() {
+        viewModelScope.launch {
+            authRepository.signOut()
+            _signInState.value = null
+            _hasExistingSession.value = false
+        }
+    }
+
+    /**
+     * Best-effort: a missing FCM token must never block sign-in, so we cap the
+     * wait and swallow failures (e.g. no Google Play services on an emulator).
+     */
+    private suspend fun fetchFcmTokenOrNull(): String? = try {
+        withTimeoutOrNull(FCM_TOKEN_TIMEOUT_MS) {
+            FirebaseMessaging.getInstance().token.await()
+        }
+    } catch (_: Exception) {
+        null
+    }
+
+    companion object {
+        private const val FCM_TOKEN_TIMEOUT_MS = 3_000L
+
+        val Factory: ViewModelProvider.Factory =
+            com.divitiae.pulsesync.ui.viewmodel.containerViewModelFactory { container ->
+                AuthViewModel(container.authRepository, container.authTokenStore)
+            }
+    }
+}
+
+/** Why the Google Sign-In intent did not produce an ID token. */
+enum class GoogleSignInFailure(val detail: String) {
+    /** google-services.json has no OAuth web client (Google provider not enabled / SHA-1 missing). */
+    NOT_CONFIGURED("Google Sign-In is not configured for this build"),
+    /** The intent returned an account with a null idToken. */
+    NO_ID_TOKEN("Google did not return an ID token"),
+    /** Play Services returned an ApiException other than cancellation. */
+    API_ERROR("Google Sign-In failed"),
+}
+
+sealed interface AuthEvent {
+    data class GoogleFailure(val reason: GoogleSignInFailure) : AuthEvent
+    data object EmailNotAvailable : AuthEvent
+}
