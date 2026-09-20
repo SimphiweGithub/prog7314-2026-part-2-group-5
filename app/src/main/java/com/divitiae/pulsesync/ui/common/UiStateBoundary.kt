@@ -82,3 +82,28 @@ fun ErrorPane(
         }
     }
 }
+
+/**
+ * Resolves a localised, non-technical message for an error. Preference order:
+ * a category-specific string for [UiState.Error.error], then the raw
+ * [UiState.Error.message], then the generic fallback.
+ */
+@Composable
+fun UiState.Error.userMessage(): String {
+    val appError = error
+    return when (appError) {
+        is AppError.Network -> stringResource(R.string.common_error_network)
+        is AppError.Unauthorized -> stringResource(R.string.common_error_unauthorized)
+        is AppError.Http -> stringResource(R.string.common_error_server, appError.code)
+        is AppError.Unknown, null ->
+            message?.takeIf { it.isNotBlank() } ?: stringResource(R.string.common_error_unknown)
+    }
+}
+
+/** Same resolution as [userMessage] but usable from a non-composable (e.g. a Snackbar lambda). */
+fun AppError?.toMessageRes(): Int = when (this) {
+    is AppError.Network -> R.string.common_error_network
+    is AppError.Unauthorized -> R.string.common_error_unauthorized
+    is AppError.Http -> R.string.common_error_server_generic
+    is AppError.Unknown, null -> R.string.common_error_unknown
+}

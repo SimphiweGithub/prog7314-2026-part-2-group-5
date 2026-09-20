@@ -108,4 +108,31 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_system">System</string>
+
+    <?xml version="1.0" encoding="utf-8"?>
+        <!-- Generic error boundary (Member 4) -->
+        <string name="common_retry">Retry</string>
+        <string name="common_error_network">You appear to be offline. Check your connection and try again.</string>
+        <string name="common_error_unauthorized">Your session has expired. Please sign in again.</string>
+        <string name="common_error_server">The server returned an error (%1$d). Please try again.</string>
+        <string name="common_error_server_generic">The server returned an error. Please try again.</string>
+        <string name="common_error_unknown">Something went wrong. Please try again.</string>
+
+        <!-- Google SSO (Member 4) -->
+        <string name="auth_error_google_generic">Google sign-in failed. Please try again.</string>
+        <string name="auth_error_google_not_configured">Google sign-in isn\'t set up for this build yet (missing SHA-1 or provider in Firebase).</string>
+        <string name="auth_error_google_no_id_token">Google didn\'t return a sign-in token. Please try again.</string>
+        <string name="auth_email_not_available">Email sign-in isn\'t available in this build — continue with Google.</string>
+
+        <!-- Article detail: DualMode toggle (User Defined 1) -->
+        <string name="article_summary_mode_label">Summary view</string>
+        <string name="article_summary_detailed">Detailed</string>
+        <string name="article_summary_condensed">Condensed</string>
+
+        <!-- Article detail: notes (User Defined 3) -->
+        <string name="article_notes_saved_local">Note saved on this device — it will sync when you\'re online.</string>
+        <string name="article_notes_save_failed">Couldn\'t save the note: %1$s</string>
+
+        <!-- Feed -->
+        <string name="feed_refresh_failed">Couldn\'t refresh: %1$s</string>
 </resources>
