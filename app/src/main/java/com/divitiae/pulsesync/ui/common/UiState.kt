@@ -47,3 +47,26 @@ fun AppError.toUiState(): UiState.Error = UiState.Error(
     // A rejected token will not fix itself on retry; everything else might.
     retryable = this !is AppError.Unauthorized,
 )
+
+/** Maps the success payload while leaving Loading/Error untouched. */
+inline fun <T, R> UiState<T>.map(transform: (T) -> R): UiState<R> = when (this) {
+    is UiState.Loading -> this
+    is UiState.Error -> this
+    is UiState.Success -> UiState.Success(transform(data))
+}
+
+val UiState<*>.isLoading: Boolean get() = this is UiState.Loading
+
+fun <T> UiState<T>.dataOrNull(): T? = (this as? UiState.Success)?.data
+
+/** Wraps a suspend call so an unexpected throwable becomes [UiState.Error], never a crash. */
+suspend inline fun <T> uiStateOf(crossinline block: suspend () -> T): UiState<T> =
+    try {
+        UiState.Success(block())
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e // never swallow cancellation
+    } catch (e: java.io.IOException) {
+        AppError.Network(e.message).toUiState()
+    } catch (e: Exception) {
+        AppError.Unknown(e.message, e).toUiState()
+    }
