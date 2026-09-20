@@ -1,5 +1,21 @@
 package com.divitiae.pulsesync.ui.theme
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The Material 3 Typography mapping and custom TextStyle definitions in this file were adapted from:
+ *
+ * Android Developers (2026) Material Design 3 in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/designsystems/material3
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Style text. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/text/style-text
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -20,6 +36,7 @@ private val Brand = FontFamily.SansSerif
  *  - bodySmall     = PulseSync/Caption (12 / 16, Regular)
  *  - labelSmall    = PulseSync/Nav Label (11 / 14, Medium)
  */
+// Adapted from: Android Developers (2026) Material Design 3 in Compose - typography. https://developer.android.com/develop/ui/compose/designsystems/material3
 val PulseSyncTypography = Typography(
     headlineLarge = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 40.sp),
     headlineMedium = TextStyle(fontFamily = Brand, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 32.sp),

@@ -1,5 +1,33 @@
 package com.divitiae.pulsesync.ui.feed
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The LazyColumn with keyed items, PullToRefreshBox, LaunchedEffect side effects, Scaffold and preview annotations in this file were adapted from:
+ *
+ * Android Developers (2026) Lazy lists and lazy grids. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/lists
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) androidx.compose.material3.pulltorefresh. [online]
+ * Available at: https://developer.android.com/reference/kotlin/androidx/compose/material3/pulltorefresh/package-summary
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Side-effects in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/side-effects
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Scaffold. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/scaffold
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Preview your UI with composable previews. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +74,7 @@ fun FeedScreen(
     var query by rememberSaveable { mutableStateOf("") }
 
     // Simulated initial load so the skeleton state is visible in the prototype.
+    // Adapted from: Android Developers (2026) Side-effects in Compose - LaunchedEffect. https://developer.android.com/develop/ui/compose/side-effects
     LaunchedEffect(Unit) {
         delay(900)
         state = state.copy(isLoading = false)
@@ -129,6 +158,7 @@ fun FeedContent(
             PulseSyncBottomBar(selected = BottomDestination.FEED, onSelect = onNavigate)
         },
     ) { innerPadding ->
+        // Adapted from: Android Developers (2026) androidx.compose.material3.pulltorefresh. https://developer.android.com/reference/kotlin/androidx/compose/material3/pulltorefresh/package-summary
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = onRefresh,

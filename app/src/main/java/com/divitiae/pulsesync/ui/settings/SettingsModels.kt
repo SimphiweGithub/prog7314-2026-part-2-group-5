@@ -1,5 +1,25 @@
 package com.divitiae.pulsesync.ui.settings
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The immutable settings-state data class and enums in this file follow the Kotlin conventions documented in:
+ *
+ * JetBrains (n.d.) Data classes. [online]
+ * Available at: https://kotlinlang.org/docs/data-classes.html
+ * [Accessed 20 September 2026].
+ *
+ * JetBrains (n.d.) Enum classes. [online]
+ * Available at: https://kotlinlang.org/docs/enum-classes.html
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) State and Jetpack Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/state
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import com.divitiae.pulsesync.ui.feed.SummaryMode
 
 /** How the app resolves light vs. dark (Accessibility card, Figma 23:89). */

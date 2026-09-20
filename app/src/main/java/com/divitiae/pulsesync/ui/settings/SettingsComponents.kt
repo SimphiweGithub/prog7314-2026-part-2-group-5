@@ -1,5 +1,33 @@
 package com.divitiae.pulsesync.ui.settings
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The animated switch, DropdownMenu, CompositionLocal theme lookup, BasicTextField decoration box and text-style handling in this file were adapted from:
+ *
+ * Android Developers (2026) Value-based animations. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/animation/value-based
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Switch. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/switch
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Menus. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/menu
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Locally scoped data with CompositionLocal. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/compositionlocal
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Configure text fields. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/text/user-input
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -143,6 +171,7 @@ fun PulseSyncSwitch(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Adapted from: Android Developers (2026) Value-based animations - animate*AsState. https://developer.android.com/develop/ui/compose/animation/value-based
     val track by animateColorAsState(
         targetValue = if (checked) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
         label = "switchTrack",
@@ -237,6 +266,7 @@ fun DropdownChip(
                 modifier = Modifier.size(14.dp),
             )
         }
+        // Adapted from: Android Developers (2026) Menus - DropdownMenu. https://developer.android.com/develop/ui/compose/components/menu
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(

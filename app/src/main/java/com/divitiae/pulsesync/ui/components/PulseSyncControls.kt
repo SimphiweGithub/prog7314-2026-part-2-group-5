@@ -1,5 +1,29 @@
 package com.divitiae.pulsesync.ui.components
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The Button/OutlinedButton styling, BasicTextField with decoration box, PasswordVisualTransformation and error semantics in this file were adapted from:
+ *
+ * Android Developers (2026) Button. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/button
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Configure text fields. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/text/user-input
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Semantics in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/accessibility/semantics
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose modifiers. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/modifiers
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -239,6 +263,7 @@ fun PulseSyncTextField(
     val isError = errorText != null
     val interactionSource = remember { MutableInteractionSource() }
     val visualTransformation =
+        // Adapted from: Android Developers (2026) Configure text fields - password field. https://developer.android.com/develop/ui/compose/text/user-input
         if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None
 
     Column(modifier = modifier.fillMaxWidth()) {

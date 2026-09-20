@@ -1,5 +1,29 @@
 package com.divitiae.pulsesync.ui.feed
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The infinite skeleton animation, chip styling, layout composition and formatted string resources in this file were adapted from:
+ *
+ * Android Developers (2026) Value-based animations. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/animation/value-based
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Chip. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/chip
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose layout basics. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/layouts/basics
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) String resources. [online]
+ * Available at: https://developer.android.com/guide/topics/resources/string-resource
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -391,6 +415,7 @@ private fun CardAction(
 /** Loading placeholder with the same silhouette as [ArticleCard]. */
 @Composable
 fun ArticleCardSkeleton(modifier: Modifier = Modifier) {
+    // Adapted from: Android Developers (2026) Value-based animations - rememberInfiniteTransition. https://developer.android.com/develop/ui/compose/animation/value-based
     val transition = rememberInfiniteTransition(label = "skeleton")
     val alpha by transition.animateFloat(
         initialValue = 0.35f,

@@ -1,5 +1,29 @@
 package com.divitiae.pulsesync.ui.article
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The BasicTextField decoration-box pattern, error semantics and layout composition in this file were adapted from:
+ *
+ * Android Developers (2026) Configure text fields. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/text/user-input
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Semantics in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/accessibility/semantics
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose layout basics. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/layouts/basics
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose modifiers. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/modifiers
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

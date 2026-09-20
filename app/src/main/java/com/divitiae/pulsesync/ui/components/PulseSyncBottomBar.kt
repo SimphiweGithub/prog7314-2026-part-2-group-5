@@ -1,5 +1,25 @@
 package com.divitiae.pulsesync.ui.components
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The selectable tab row, Material 3 colour-role usage and enum-backed destinations in this file were adapted from:
+ *
+ * Android Developers (2026) Material Design 3 in Compose. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/designsystems/material3
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Compose layout basics. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/layouts/basics
+ * [Accessed 20 September 2026].
+ *
+ * JetBrains (n.d.) Enum classes. [online]
+ * Available at: https://kotlinlang.org/docs/enum-classes.html
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

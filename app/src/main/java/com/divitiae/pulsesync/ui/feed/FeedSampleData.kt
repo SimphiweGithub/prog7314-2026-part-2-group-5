@@ -1,5 +1,17 @@
 package com.divitiae.pulsesync.ui.feed
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The singleton sample-data object in this file follows the Kotlin object declaration documented in:
+ *
+ * JetBrains (n.d.) Object declarations and expressions. [online]
+ * Available at: https://kotlinlang.org/docs/object-declarations.html
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 /**
  * Placeholder content mirroring the Figma Feed Dashboard frames. Used by
  * previews and by the prototype until the Retrofit-backed ViewModel lands.

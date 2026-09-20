@@ -1,5 +1,29 @@
 package com.divitiae.pulsesync.ui.auth
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The Checkbox with toggleable row, stateful/stateless screen split, keyboard handling and preview annotations in this file were adapted from:
+ *
+ * Android Developers (2026) Checkbox. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/checkbox
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Where to hoist state. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/state-hoisting
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Configure text fields. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/text/user-input
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Preview your UI with composable previews. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -242,6 +266,7 @@ private fun TermsRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // Adapted from: Android Developers (2026) Checkbox. https://developer.android.com/develop/ui/compose/components/checkbox
                 .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
                 .padding(top = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -1,5 +1,33 @@
 package com.divitiae.pulsesync.ui.article
 
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * The Scaffold + SnackbarHost structure, state hoisting, window-inset padding and preview annotations in this file were adapted from:
+ *
+ * Android Developers (2026) Scaffold. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/scaffold
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Snackbar. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/components/snackbar
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Where to hoist state. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/state-hoisting
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) About window insets. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/system/insets
+ * [Accessed 20 September 2026].
+ *
+ * Android Developers (2026) Preview your UI with composable previews. [online]
+ * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
+ * [Accessed 20 September 2026].
+ * ---------------------------------------------------------------------
+ */
+
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -56,6 +84,7 @@ fun ArticleDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    // Adapted from: Android Developers (2026) Snackbar. https://developer.android.com/develop/ui/compose/components/snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
