@@ -40,3 +40,38 @@ fun rememberGoogleSignInLauncher(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
         if (result.data == null && result.resultCode != Activity.RESULT_OK) {
+            currentOnFailure(null) // back-pressed out of the picker
+            return@rememberLauncherForActivityResult
+        }
+        try {
+            val account = GoogleSignIn
+                .getSignedInAccountFromIntent(result.data)
+                .getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken.isNullOrBlank()) {
+                currentOnFailure(GoogleSignInFailure.NO_ID_TOKEN)
+            } else {
+                currentOnIdToken(idToken)
+            }
+        } catch (e: ApiException) {
+            when (e.statusCode) {
+                GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> currentOnFailure(null)
+                // 10 = DEVELOPER_ERROR: almost always a missing SHA-1 in Firebase console.
+                GoogleSignInStatusCodes.DEVELOPER_ERROR -> currentOnFailure(GoogleSignInFailure.NOT_CONFIGURED)
+                else -> currentOnFailure(GoogleSignInFailure.API_ERROR)
+            }
+        }
+    }
+    return {
+        if (!GoogleSignInHelper.isConfigured(context)) {
+            currentOnFailure(GoogleSignInFailure.NOT_CONFIGURED)
+        } else {
+            val client = GoogleSignInHelper.client(context)
+            // Sign out of the cached Google account first so the picker always
+            // appears — otherwise a second tap silently reuses the last account.
+            client.signOut().addOnCompleteListener {
+                launcher.launch(client.signInIntent)
+            }
+        }
+    }
+}
