@@ -12,7 +12,20 @@
           "package_name": "com.divitiae.pulsesync"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "925413299571-5e3ceekg78159j8s6mf7t2ptp7768rfc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.divitiae.pulsesync",
+            "certificate_hash": "e41b9e83c23ddf42d055e07d91895a5b12c80098"
+          }
+        },
+        {
+          "client_id": "925413299571-up3akjdrqcnv8b4e04g0vvs52s8sl8nb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCbI4A4VOg_t65186JhzdfwIMEt1s7zwN8"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "925413299571-up3akjdrqcnv8b4e04g0vvs52s8sl8nb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
