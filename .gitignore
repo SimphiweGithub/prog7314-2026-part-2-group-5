@@ -9,7 +9,6 @@
 .cxx
 local.properties
 /app/build
-/app/google-services.json
 *.keystore
 *.jks
 /gradle/gradle-daemon-jvm.properties
