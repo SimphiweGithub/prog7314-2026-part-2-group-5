@@ -46,16 +46,21 @@ class TokenCipher(private val alias: String = DEFAULT_ALIAS) {
      * was rotated/invalidated (e.g. the user removed their lock screen with an
      * auth-bound key). Callers treat null as "signed out".
      */
-    fun decrypt(encoded: String): String? = try {
-        val bytes = Base64.decode(encoded, Base64.NO_WRAP)
-        if (bytes.size <= IV_LENGTH_BYTES) return null
-        val iv = bytes.copyOfRange(0, IV_LENGTH_BYTES)
-        val cipherText = bytes.copyOfRange(IV_LENGTH_BYTES, bytes.size)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(TAG_LENGTH_BITS, iv))
-        String(cipher.doFinal(cipherText), Charsets.UTF_8)
-    } catch (_: Exception) {
-        null
+    fun decrypt(encoded: String): String? {
+        return try {
+            val bytes = Base64.decode(encoded, Base64.NO_WRAP)
+            if (bytes.size <= IV_LENGTH_BYTES) return null
+            val iv = bytes.copyOfRange(0, IV_LENGTH_BYTES)
+            val cipherText = bytes.copyOfRange(IV_LENGTH_BYTES, bytes.size)
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(
+                Cipher.DECRYPT_MODE, getOrCreateKey(),
+                GCMParameterSpec(TAG_LENGTH_BITS, iv)
+            )
+            String(cipher.doFinal(cipherText), Charsets.UTF_8)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun getOrCreateKey(): SecretKey {
