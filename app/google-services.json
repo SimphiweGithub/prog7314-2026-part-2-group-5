@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "925413299571",
+    "project_id": "pulsesync-ede3e",
+    "storage_bucket": "pulsesync-ede3e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:925413299571:android:02808cf6e7f53a7b586106",
+        "android_client_info": {
+          "package_name": "com.divitiae.pulsesync"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "925413299571-5e3ceekg78159j8s6mf7t2ptp7768rfc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.divitiae.pulsesync",
+            "certificate_hash": "e41b9e83c23ddf42d055e07d91895a5b12c80098"
+          }
+        },
+        {
+          "client_id": "925413299571-up3akjdrqcnv8b4e04g0vvs52s8sl8nb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbI4A4VOg_t65186JhzdfwIMEt1s7zwN8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "925413299571-up3akjdrqcnv8b4e04g0vvs52s8sl8nb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
