@@ -1,31 +1,20 @@
 package com.divitiae.pulsesync.ui.navigation
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The NavHost graph, route arguments, popUpTo/launchSingleTop options and back-stack handling in this file were adapted from:
- *
- * Android Developers (2026) Navigation with Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/navigation
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
- */
-
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.divitiae.pulsesync.ui.article.ArticleDetailScreen
-import com.divitiae.pulsesync.ui.auth.SignInScreen
-import com.divitiae.pulsesync.ui.auth.SignUpScreen
+import com.divitiae.pulsesync.ui.auth.AuthViewModel
+import com.divitiae.pulsesync.ui.auth.SignInRoute
+import com.divitiae.pulsesync.ui.auth.SignUpRoute
 import com.divitiae.pulsesync.ui.components.BottomDestination
-import com.divitiae.pulsesync.ui.feed.FeedSampleData
-import com.divitiae.pulsesync.ui.feed.FeedScreen
+import com.divitiae.pulsesync.ui.feed.FeedRoute
 import com.divitiae.pulsesync.ui.settings.SettingsScreen
 import com.divitiae.pulsesync.ui.settings.ThemeMode
 
@@ -42,11 +31,12 @@ object Routes {
 }
 
 /**
- * Top-level navigation graph: auth flow → feed → article detail, plus the
- * settings tab. Vault is outside Member 2's scope and stays a no-op.
+ * REPLACES Member 2's PulseSyncNavHost.kt.
  *
- * Auth actions only navigate here; the actual sign-in/registration calls
- * are Member 4's ViewModels, which will gate the navigation on success.
+ * Top-level graph: auth (Google SSO) → feed → article detail, plus settings.
+ * Navigation out of the auth screens is now gated on the ViewModel: the
+ * routes call `onSignedIn` only after `/api/v1/auth/google` returns a JWT (or
+ * when one is already persisted). Vault remains outside scope.
  */
 @Composable
 fun PulseSyncNavHost(
@@ -56,7 +46,10 @@ fun PulseSyncNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.SIGN_IN,
 ) {
-    // Adapted from: Android Developers (2026) Navigation with Compose - navigate with options. https://developer.android.com/develop/ui/compose/navigation
+    // Scoped to the Activity (not a back-stack entry) so Sign In and Sign Up
+    // share one in-flight sign-in state.
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
+
     fun switchTab(route: String) {
         navController.navigate(route) {
             popUpTo(Routes.FEED) { saveState = true }
@@ -78,20 +71,18 @@ fun PulseSyncNavHost(
         modifier = modifier,
     ) {
         composable(Routes.SIGN_IN) {
-            SignInScreen(
-                onSignIn = { _, _ -> enterApp() /* TODO(Member 4): AuthViewModel.signIn */ },
-                onGoogleSignIn = { enterApp() /* TODO(Member 4): Google SSO */ },
-                onBiometricSignIn = { enterApp() /* TODO(Member 4): BiometricPrompt */ },
-                onForgotPassword = { /* TODO: password reset flow */ },
+            SignInRoute(
+                viewModel = authViewModel,
+                onSignedIn = ::enterApp,
                 onNavigateToSignUp = {
                     navController.navigate(Routes.SIGN_UP) { launchSingleTop = true }
                 },
             )
         }
         composable(Routes.SIGN_UP) {
-            SignUpScreen(
-                onCreateAccount = { _, _, _ -> enterApp() /* TODO(Member 4): AuthViewModel.register */ },
-                onGoogleSignUp = { enterApp() /* TODO(Member 4): Google SSO */ },
+            SignUpRoute(
+                viewModel = authViewModel,
+                onSignedIn = ::enterApp,
                 onNavigateToSignIn = {
                     // Sign In is always the root, so pop back instead of stacking.
                     navController.popBackStack(Routes.SIGN_IN, inclusive = false)
@@ -99,14 +90,14 @@ fun PulseSyncNavHost(
             )
         }
         composable(Routes.FEED) {
-            FeedScreen(
+            FeedRoute(
                 onOpenArticle = { article ->
                     navController.navigate(Routes.article(article.id)) { launchSingleTop = true }
                 },
                 onNavigate = { destination ->
                     when (destination) {
                         BottomDestination.FEED -> Unit
-                        BottomDestination.VAULT -> Unit // Vault is outside Member 2's scope
+                        BottomDestination.VAULT -> Unit // Vault is outside scope for Part 2
                         BottomDestination.SETTINGS -> switchTab(Routes.SETTINGS)
                     }
                 },
@@ -119,7 +110,7 @@ fun PulseSyncNavHost(
                 onNavigate = { destination ->
                     when (destination) {
                         BottomDestination.FEED -> switchTab(Routes.FEED)
-                        BottomDestination.VAULT -> Unit // Vault is outside Member 2's scope
+                        BottomDestination.VAULT -> Unit
                         BottomDestination.SETTINGS -> Unit
                     }
                 },
@@ -127,20 +118,17 @@ fun PulseSyncNavHost(
         }
         composable(
             route = Routes.ARTICLE,
-            // Adapted from: Android Developers (2026) Navigation with Compose - navigate with arguments. https://developer.android.com/develop/ui/compose/navigation
             arguments = listOf(navArgument(Routes.ARTICLE_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
             val articleId = backStackEntry.arguments?.getString(Routes.ARTICLE_ID_ARG)
-            // TODO(Member 4): resolve from the ArticleViewModel instead of sample data.
-            val article = articleId?.let(FeedSampleData::articleById)
-            if (article == null) {
+            if (articleId.isNullOrBlank()) {
                 navController.popBackStack()
             } else {
+                // The ViewModel resolves the article from Room; a missing id
+                // renders the error boundary rather than popping blindly.
                 ArticleDetailScreen(
-                    article = article,
+                    articleId = articleId,
                     onBack = { navController.popBackStack() },
-                    onToggleSave = { /* TODO(Member 4): persist saved state */ },
-                    onSaveNote = { _, _ -> /* TODO(Member 4): NotesViewModel.save */ },
                 )
             }
         }
