@@ -34,3 +34,16 @@ sealed interface UiState<out T> {
         val retryable: Boolean = true,
     ) : UiState<Nothing>
 }
+
+/** Bridges Member 3's data-layer [Result] onto the UI wrapper. */
+fun <T> Result<T>.toUiState(): UiState<T> = when (this) {
+    is Result.Success -> UiState.Success(data)
+    is Result.Failure -> error.toUiState()
+}
+
+fun AppError.toUiState(): UiState.Error = UiState.Error(
+    message = message,
+    error = this,
+    // A rejected token will not fix itself on retry; everything else might.
+    retryable = this !is AppError.Unauthorized,
+)
