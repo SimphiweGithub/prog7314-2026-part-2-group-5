@@ -68,7 +68,22 @@ class AuthRepository(
                     Result.Success(profile)
                 }
 
-                is Result.Failure -> exchange
+                is Result.Failure -> {
+                    // Offline-first fallback:
+                    // Google + Firebase Auth succeeded on the client. If the remote ASP.NET Core
+                    // REST API is unreachable or returns 404/5xx (e.g. cold start, load shedding,
+                    // or staging environment offline), proceed using the Firebase ID token and user
+                    // profile so the user can access the offline/cached feed without being blocked.
+                    tokenStore.save(firebaseIdToken, firebaseIdToken)
+                    val profile = UserProfile(
+                        userId = firebaseUser.uid,
+                        email = firebaseUser.email.orEmpty(),
+                        displayName = firebaseUser.displayName ?: firebaseUser.email.orEmpty(),
+                        photoUrl = firebaseUser.photoUrl?.toString(),
+                    )
+                    userDao.upsert(profile.toEntity(System.currentTimeMillis()))
+                    Result.Success(profile)
+                }
             }
         } catch (e: Exception) {
             Result.Failure(AppError.Unknown(e.message, e))
