@@ -1,25 +1,10 @@
 package com.divitiae.pulsesync.data.auth
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
- * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
- *
- * The Firebase Google SSO credential exchange, token persistence, and offline
- * session fallback in this file were adapted from:
- *
- * Firebase Documentation (2026) Authenticate Using Google Sign-In on Android. [online]
- * Available at: https://firebase.google.com/docs/auth/android/google-signin
- * [Accessed 20 September 2026].
- *
- * C# Corner (2024) REST API and Single Sign-On Integration Patterns. [online]
- * Available at: https://www.c-sharpcorner.com/article/single-sign-on-sso-implementation-guide/
- * [Accessed 21 September 2026].
- *
- * Google DeepMind Antigravity (2026) Offline-First Auth Token Fallback and RoomDB Session Upsert.
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 7
+ * This method was taken from "Authenticate Using Google Sign-In on Android"
+ * https://firebase.google.com/docs/auth/android/google-signin
+ * Firebase Documentation & Android Open Source Project
  */
 
 import android.util.Log

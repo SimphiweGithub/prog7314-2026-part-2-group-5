@@ -1,31 +1,10 @@
 package com.divitiae.pulsesync.ui.article
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The BasicTextField decoration-box pattern, error semantics, FlowRow tag chips and layout composition in this file were adapted from:
- *
- * Android Developers (2026) Configure text fields. [online]
- * Available at: https://developer.android.com/develop/ui/compose/text/user-input
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Flow layouts in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/layouts/flow
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Semantics in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/accessibility/semantics
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Compose layout basics. [online]
- * Available at: https://developer.android.com/develop/ui/compose/layouts/basics
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Compose modifiers. [online]
- * Available at: https://developer.android.com/develop/ui/compose/modifiers
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 18
+ * This method was taken from "Configure text fields and Flow layouts in Compose"
+ * https://developer.android.com/develop/ui/compose/text/user-input
+ * Android Developers
  */
 
 import androidx.compose.foundation.BorderStroke

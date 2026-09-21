@@ -1,15 +1,10 @@
 package com.divitiae.pulsesync.ui.auth
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The e-mail validation in this file uses the Android Patterns.EMAIL_ADDRESS matcher as documented in:
- *
- * Android Developers (2026) Patterns. [online]
- * Available at: https://developer.android.com/reference/android/util/Patterns
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 22
+ * This method was taken from "Patterns and Email Address Validation in Android"
+ * https://developer.android.com/reference/android/util/Patterns
+ * Android Developers
  */
 
 import android.util.Patterns

@@ -1,51 +1,10 @@
 package com.divitiae.pulsesync.ui.article
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The Scaffold + SnackbarHost structure, Toast feedback, state hoisting, window-inset padding and preview annotations in this file were adapted from:
- *
- * Android Developers (2026) Scaffold. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/scaffold
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Snackbar. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/snackbar
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Toasts overview. [online]
- * Available at: https://developer.android.com/guide/topics/ui/notifiers/toasts
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Where to hoist state. [online]
- * Available at: https://developer.android.com/develop/ui/compose/state-hoisting
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) About window insets. [online]
- * Available at: https://developer.android.com/develop/ui/compose/system/insets
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Preview your UI with composable previews. [online]
- * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
- * [Accessed 20 September 2026].
- *
- * The ViewModel-backed screen (viewModel() with a factory, collectAsState on a
- * StateFlow, LaunchedEffect for one-shot events) and the segmented DualMode
- * toggle were adapted from:
- *
- * Android Developers (2026) ViewModel and State in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/state#viewmodel-state
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Side-effects in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/side-effects
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Segmented button. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/segmented-button
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 17
+ * This method was taken from "Scaffold and TopAppBar in Jetpack Compose"
+ * https://developer.android.com/develop/ui/compose/components/scaffold
+ * Android Developers
  */
 
 import android.content.res.Configuration

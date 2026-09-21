@@ -1,27 +1,8 @@
 /*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
- * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
- *
- * The Google Cloud Firestore NoSQL repository implementation, subcollection document
- * tree mapping, and asynchronous Firestore writes in this file were adapted from:
- *
- * Google Firebase (2024) Cloud Firestore: Add data with the Cloud Client Libraries. [online]
- * Available at: https://firebase.google.com/docs/firestore/quickstart#c
- * [Accessed 21 September 2026].
- *
- * Google Cloud (2024) FirestoreDb Class (.NET API reference). [online]
- * Available at: https://cloud.google.com/dotnet/docs/reference/Google.Cloud.Firestore/latest
- * [Accessed 21 September 2026].
- *
- * C# Corner (2024) Integrating Google Cloud Firestore with .NET Core Web API. [online]
- * Available at: https://www.c-sharpcorner.com/article/integrating-google-cloud-firestore-with-net-core-web-api/
- * [Accessed 21 September 2026].
- *
- * Google DeepMind Antigravity (2026) Firestore Repository & Real-Time Sync Scaffolding.
- * ---------------------------------------------------------------------
+ * Code Attribution No 36
+ * This method was taken from "Cloud Firestore: Add data with the Cloud Client Libraries"
+ * https://firebase.google.com/docs/firestore/quickstart#c
+ * Google Firebase
  */
 
 using Google.Apis.Auth.OAuth2;

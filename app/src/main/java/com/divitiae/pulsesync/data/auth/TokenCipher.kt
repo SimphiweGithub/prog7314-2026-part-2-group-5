@@ -11,10 +11,11 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Code Attribution
- * This file was assited with Claude.AI
- * https://claude.ai/
- * **/
+ * Code Attribution No 8
+ * This method was taken from "Android Keystore System and AES-GCM Authenticated Encryption"
+ * https://developer.android.com/privacy-and-security/keystore
+ * Android Developers & Claude.AI
+ */
 
 /**
  * AES-256-GCM encryption backed by the Android Keystore. The key never leaves

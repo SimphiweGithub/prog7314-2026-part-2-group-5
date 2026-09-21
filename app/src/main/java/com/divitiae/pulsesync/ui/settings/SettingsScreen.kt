@@ -1,31 +1,10 @@
 package com.divitiae.pulsesync.ui.settings
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The Toast feedback, FlowRow keyword chips, Scaffold structure, local UI state and preview annotations in this file were adapted from:
- *
- * Android Developers (2026) Toasts overview. [online]
- * Available at: https://developer.android.com/guide/topics/ui/notifiers/toasts
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Flow layouts in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/layouts/flow
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Scaffold. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/scaffold
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) State and Jetpack Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/state
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Preview your UI with composable previews. [online]
- * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 25
+ * This method was taken from "Toasts overview and Flow layouts in Compose"
+ * https://developer.android.com/guide/topics/ui/notifiers/toasts
+ * Android Developers
  */
 
 import android.content.res.Configuration

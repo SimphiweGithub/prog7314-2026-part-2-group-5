@@ -1,23 +1,10 @@
 package com.divitiae.pulsesync.ui.feed
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The immutable UI-state data classes and enums in this file follow the Kotlin conventions documented in:
- *
- * JetBrains (n.d.) Data classes. [online]
- * Available at: https://kotlinlang.org/docs/data-classes.html
- * [Accessed 20 September 2026].
- *
- * JetBrains (n.d.) Enum classes. [online]
- * Available at: https://kotlinlang.org/docs/enum-classes.html
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) State and Jetpack Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/state
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 15
+ * This method was taken from "Model-View-ViewModel UI state modeling"
+ * https://developer.android.com/topic/architecture/ui-layer
+ * Android Developers
  */
 
 /**

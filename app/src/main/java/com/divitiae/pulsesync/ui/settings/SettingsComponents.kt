@@ -1,31 +1,10 @@
 package com.divitiae.pulsesync.ui.settings
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The animated switch, DropdownMenu, CompositionLocal theme lookup, BasicTextField decoration box and text-style handling in this file were adapted from:
- *
- * Android Developers (2026) Value-based animations. [online]
- * Available at: https://developer.android.com/develop/ui/compose/animation/value-based
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Switch. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/switch
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Menus. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/menu
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Locally scoped data with CompositionLocal. [online]
- * Available at: https://developer.android.com/develop/ui/compose/compositionlocal
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Configure text fields. [online]
- * Available at: https://developer.android.com/develop/ui/compose/text/user-input
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 26
+ * This method was taken from "Value-based animations and Menus in Compose"
+ * https://developer.android.com/develop/ui/compose/animation/value-based
+ * Android Developers
  */
 
 import androidx.compose.animation.animateColorAsState

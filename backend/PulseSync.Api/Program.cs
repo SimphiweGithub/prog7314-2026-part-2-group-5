@@ -1,23 +1,8 @@
 /*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
- * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
- *
- * The ASP.NET Core 8 Web API service configuration, JWT Bearer middleware,
- * Swagger/OpenAPI setup and CORS configuration in this file were adapted from:
- *
- * C# Corner (2024) JWT Authentication and Authorization in ASP.NET Core Web API. [online]
- * Available at: https://www.c-sharpcorner.com/article/jwt-authentication-and-authorization-in-net-core-web-api/
- * [Accessed 21 September 2026].
- *
- * Microsoft Learn (2024) Overview of ASP.NET Core middleware. [online]
- * Available at: https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/
- * [Accessed 21 September 2026].
- *
- * Google DeepMind Antigravity (2026) AI Pair Programming and REST API Architecture Scaffolding.
- * ---------------------------------------------------------------------
+ * Code Attribution No 29
+ * This method was taken from "JWT Authentication and Authorization in ASP.NET Core Web API"
+ * https://www.c-sharpcorner.com/article/jwt-authentication-and-authorization-in-net-core-web-api/
+ * C# Corner
  */
 
 using System.Text.Json;

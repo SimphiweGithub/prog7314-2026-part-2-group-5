@@ -1,23 +1,10 @@
 package com.divitiae.pulsesync.ui.theme
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The light/dark colour schemes, MaterialTheme wrapper and CompositionLocal flag in this file were adapted from:
- *
- * Android Developers (2026) Material Design 3 in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/designsystems/material3
- * [Accessed 20 September 2026].
- *
- * Google (n.d.) Color roles - Material Design 3. [online]
- * Available at: https://m3.material.io/styles/color/roles
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Locally scoped data with CompositionLocal. [online]
- * Available at: https://developer.android.com/develop/ui/compose/compositionlocal
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 10
+ * This method was taken from "Material Design 3 in Compose"
+ * https://developer.android.com/develop/ui/compose/designsystems/material3
+ * Android Developers
  */
 
 import androidx.compose.foundation.isSystemInDarkTheme

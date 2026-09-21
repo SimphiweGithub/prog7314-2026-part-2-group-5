@@ -1,22 +1,8 @@
 /*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
- * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
- *
- * The Firebase ID token validation and claims extraction logic were adapted from:
- *
- * Google Firebase (2024) Verify ID Tokens using Firebase Admin SDK. [online]
- * Available at: https://firebase.google.com/docs/auth/admin/verify-id-tokens
- * [Accessed 21 September 2026].
- *
- * C# Corner (2024) Read and Validate JWT Token in C#. [online]
- * Available at: https://www.c-sharpcorner.com/article/read-and-validate-jwt-token-in-c-sharp/
- * [Accessed 21 September 2026].
- *
- * Google DeepMind Antigravity (2026) Firebase Claims Parsing & Resilient Token Verification.
- * ---------------------------------------------------------------------
+ * Code Attribution No 35
+ * This method was taken from "Verify ID Tokens using Firebase Admin SDK"
+ * https://firebase.google.com/docs/auth/admin/verify-id-tokens
+ * Google Firebase
  */
 
 using System.IdentityModel.Tokens.Jwt;

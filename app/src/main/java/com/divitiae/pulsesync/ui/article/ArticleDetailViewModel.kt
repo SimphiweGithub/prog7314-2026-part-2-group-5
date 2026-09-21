@@ -1,29 +1,10 @@
 package com.divitiae.pulsesync.ui.article
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The ViewModel + StateFlow pattern, viewModelScope coroutine launching,
- * combine()-based UI-state derivation and the manual ViewModelProvider.Factory
- * in this file were adapted from:
- *
- * Android Developers (2026) ViewModel overview. [online]
- * Available at: https://developer.android.com/topic/libraries/architecture/viewmodel
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) StateFlow and SharedFlow. [online]
- * Available at: https://developer.android.com/kotlin/flow/stateflow-and-sharedflow
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) UI layer: expose UI state. [online]
- * Available at: https://developer.android.com/topic/architecture/ui-layer#expose-ui-state
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Create ViewModels with dependencies. [online]
- * Available at: https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-factories
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 19
+ * This method was taken from "ViewModel overview and StateFlow lifecycle"
+ * https://developer.android.com/topic/libraries/architecture/viewmodel
+ * Android Developers
  */
 
 import android.util.Log
