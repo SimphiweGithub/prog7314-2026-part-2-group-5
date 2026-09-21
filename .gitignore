@@ -12,3 +12,11 @@ local.properties
 *.keystore
 *.jks
 /gradle/gradle-daemon-jvm.properties
+
+# .NET / C#
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+*.user
+*.suo
