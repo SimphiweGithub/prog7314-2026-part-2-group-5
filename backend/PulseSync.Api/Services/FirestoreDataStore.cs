@@ -50,7 +50,9 @@ public class FirestoreDataStore : IDataStore
 
             if (!string.IsNullOrWhiteSpace(credentialsJson))
             {
+#pragma warning disable CS0618
                 builder.Credential = GoogleCredential.FromJson(credentialsJson);
+#pragma warning restore CS0618
             }
 
             _firestoreDb = builder.Build();
