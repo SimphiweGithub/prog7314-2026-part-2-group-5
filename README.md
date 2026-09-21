@@ -313,7 +313,7 @@ sequenceDiagram
     FCM-->>APP: 8. Deliver high-priority FCM push alert
 
     %% Stage 2: User Launch & Feed Fetch
-    Note over AND,FS: User Authentication & Feed Hydration
+    Note over APP,FS: User Authentication & Feed Hydration
     APP->>API: 9. POST auth/google (Exchange Firebase ID Token)
     API-->>APP: 10. Return PulseSync JWT Access & Refresh Tokens
     APP->>API: 11. GET articles (Authorization: Bearer JWT)
