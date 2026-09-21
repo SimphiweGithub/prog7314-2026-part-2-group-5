@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users collection: A user may only read/write their own document and subcollections
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Articles collection: Public read-only for authenticated students; only server service account writes
+    match /articles/{articleId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Categories collection: Public read-only for authenticated students; only server service account writes
+    match /categories/{slug} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Full text collection: Restricted to server API proxy to enforce the 5-slot offline limit
+    match /articleFullText/{articleId} {
+      allow read, write: if false;
+    }
+  }
+}
