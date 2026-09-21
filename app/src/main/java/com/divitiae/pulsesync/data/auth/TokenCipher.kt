@@ -3,6 +3,7 @@ package com.divitiae.pulsesync.data.auth
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -10,10 +11,11 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Code Attribution
- * This file was assited with Claude.AI
- * https://claude.ai/
- * **/
+ * Code Attribution No 8
+ * This method was taken from "Android Keystore System and AES-GCM Authenticated Encryption"
+ * https://developer.android.com/privacy-and-security/keystore
+ * Android Developers & Claude.AI
+ */
 
 /**
  * AES-256-GCM encryption backed by the Android Keystore. The key never leaves
@@ -58,13 +60,15 @@ class TokenCipher(private val alias: String = DEFAULT_ALIAS) {
                 GCMParameterSpec(TAG_LENGTH_BITS, iv)
             )
             String(cipher.doFinal(cipherText), Charsets.UTF_8)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "decrypt: failed to decrypt token payload, returning null", e)
             null
         }
     }
 
     private fun getOrCreateKey(): SecretKey {
         (keyStore.getKey(alias, null) as? SecretKey)?.let { return it }
+        Log.i(TAG, "getOrCreateKey: generating new AES key in AndroidKeyStore for alias=$alias")
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
         val spec = KeyGenParameterSpec.Builder(
             alias,
@@ -82,6 +86,7 @@ class TokenCipher(private val alias: String = DEFAULT_ALIAS) {
     }
 
     companion object {
+        private const val TAG = "TokenCipher"
         const val DEFAULT_ALIAS = "pulsesync_jwt_key"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val TRANSFORMATION = "AES/GCM/NoPadding"

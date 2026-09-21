@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.ui.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -52,6 +53,7 @@ class AuthViewModel(
     val events: StateFlow<AuthEvent?> = _events.asStateFlow()
 
     init {
+        Log.d(TAG, "AuthViewModel initialized")
         viewModelScope.launch {
             // AppContainer.initialise() also calls load(), but racing it here is
             // harmless (idempotent) and guarantees the value is fresh before we route.
@@ -63,7 +65,9 @@ class AuthViewModel(
     /** Step 2: the Google Sign-In intent returned an ID token. */
     fun onGoogleIdToken(googleIdToken: String) {
         if (_signInState.value is UiState.Loading) return // ignore double taps
+        Log.d(TAG, "onGoogleIdToken: received Google ID token, initiating sign-in")
         _signInState.value = UiState.Loading
+
         viewModelScope.launch {
             val fcmToken = fetchFcmTokenOrNull()
             _signInState.value = authRepository
@@ -102,11 +106,17 @@ class AuthViewModel(
     }
 
     fun signOut() {
+        Log.i(TAG, "signOut requested in AuthViewModel")
         viewModelScope.launch {
             authRepository.signOut()
             _signInState.value = null
             _hasExistingSession.value = false
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "AuthViewModel onCleared")
     }
 
     /**
@@ -122,6 +132,7 @@ class AuthViewModel(
     }
 
     companion object {
+        private const val TAG = "AuthViewModel"
         private const val FCM_TOKEN_TIMEOUT_MS = 3_000L
 
         val Factory: ViewModelProvider.Factory =

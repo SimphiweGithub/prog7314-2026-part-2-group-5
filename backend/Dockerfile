@@ -1,21 +1,7 @@
-# ---------------------------------------------------------------------
-# CODE ATTRIBUTION
-# ---------------------------------------------------------------------
-# Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
-# Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
-#
-# The multi-stage build optimization and ASP.NET Core 8 container configuration were adapted from:
-#
-# C# Corner (2024) Dockerizing an ASP.NET Core Web API: A Step-by-Step Guide. [online]
-# Available at: https://www.c-sharpcorner.com/article/dockerizing-an-asp-net-core-web-api/
-# [Accessed 21 September 2026].
-#
-# Render (2024) Deploy a Docker Web Service on Render. [online]
-# Available at: https://render.com/docs/docker
-# [Accessed 21 September 2026].
-#
-# Google DeepMind Antigravity (2026) Multi-Stage Dockerfile & Render Port 8080 Configuration.
-# ---------------------------------------------------------------------
+# Code Attribution No 43
+# This method was taken from "Dockerizing an ASP.NET Core Web API: A Step-by-Step Guide"
+# https://www.c-sharpcorner.com/article/dockerizing-an-asp-net-core-web-api/
+# C# Corner & Render
 
 # Multi-stage Dockerfile for PulseSync ASP.NET Core 8 Web API
 # Optimized for Render Cloud Hosting (https://pulsesync-api.onrender.com/)

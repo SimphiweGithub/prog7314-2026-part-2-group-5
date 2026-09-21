@@ -1,31 +1,13 @@
 package com.divitiae.pulsesync.ui.article
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The ViewModel + StateFlow pattern, viewModelScope coroutine launching,
- * combine()-based UI-state derivation and the manual ViewModelProvider.Factory
- * in this file were adapted from:
- *
- * Android Developers (2026) ViewModel overview. [online]
- * Available at: https://developer.android.com/topic/libraries/architecture/viewmodel
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) StateFlow and SharedFlow. [online]
- * Available at: https://developer.android.com/kotlin/flow/stateflow-and-sharedflow
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) UI layer: expose UI state. [online]
- * Available at: https://developer.android.com/topic/architecture/ui-layer#expose-ui-state
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Create ViewModels with dependencies. [online]
- * Available at: https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-factories
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 19
+ * This method was taken from "ViewModel overview and StateFlow lifecycle"
+ * https://developer.android.com/topic/libraries/architecture/viewmodel
+ * Android Developers
  */
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -114,6 +96,15 @@ class ArticleDetailViewModel(
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
+
+    init {
+        Log.d(TAG, "ArticleDetailViewModel initialized for articleId=$articleId")
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "ArticleDetailViewModel onCleared for articleId=$articleId")
+    }
 
     /**
      * Ephemeral editor state. Nullable fields mean "user hasn't touched this
@@ -292,6 +283,7 @@ class ArticleDetailViewModel(
     }
 
     companion object {
+        private const val TAG = "ArticleDetailViewModel"
         fun factory(articleId: String): ViewModelProvider.Factory = containerViewModelFactory { c ->
             ArticleDetailViewModel(
                 articleId = articleId,

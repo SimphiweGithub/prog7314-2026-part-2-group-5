@@ -1,19 +1,10 @@
 package com.divitiae.pulsesync.ui.theme
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The Material 3 Typography mapping and custom TextStyle definitions in this file were adapted from:
- *
- * Android Developers (2026) Material Design 3 in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/designsystems/material3
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Style text. [online]
- * Available at: https://developer.android.com/develop/ui/compose/text/style-text
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 12
+ * This method was taken from "Typography in Compose"
+ * https://developer.android.com/develop/ui/compose/designsystems/material3#typography
+ * Android Developers
  */
 
 import androidx.compose.material3.Typography

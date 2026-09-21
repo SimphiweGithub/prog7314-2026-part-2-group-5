@@ -1,15 +1,10 @@
 package com.divitiae.pulsesync.ui.feed
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The singleton sample-data object in this file follows the Kotlin object declaration documented in:
- *
- * JetBrains (n.d.) Object declarations and expressions. [online]
- * Available at: https://kotlinlang.org/docs/object-declarations.html
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 16
+ * This method was taken from "Compose Preview sample data providers"
+ * https://developer.android.com/develop/ui/compose/tooling/previews
+ * Android Developers
  */
 
 /**

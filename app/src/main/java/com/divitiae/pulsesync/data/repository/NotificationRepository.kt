@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.repository
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.NotificationItem
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.local.dao.NotificationDao
@@ -29,18 +30,28 @@ class NotificationRepository(
     }
 
     suspend fun refresh(): Result<Unit> = withContext(io) {
+        Log.d(TAG, "refresh: fetching notifications from remote API")
         when (val result = safeApiCall { api.getNotifications() }) {
             is Result.Success -> {
+                Log.i(TAG, "refresh: retrieved ${result.data.size} notifications from remote API")
                 notificationDao.upsertAll(result.data.map { it.toDomain().toEntity() })
                 Result.Success(Unit)
             }
 
-            is Result.Failure -> result
+            is Result.Failure -> {
+                Log.w(TAG, "refresh: failed to fetch notifications from remote API: ${result.error}")
+                result
+            }
         }
     }
 
     suspend fun markRead(id: String) = withContext(io) {
+        Log.d(TAG, "markRead: marking notification $id read on remote API")
         notificationDao.markRead(id)
         safeApiCallEmpty { api.markNotificationRead(id) }
+    }
+
+    companion object {
+        private const val TAG = "NotificationRepository"
     }
 }

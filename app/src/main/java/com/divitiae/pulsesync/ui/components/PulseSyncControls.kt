@@ -1,27 +1,10 @@
 package com.divitiae.pulsesync.ui.components
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The Button/OutlinedButton styling, BasicTextField with decoration box, PasswordVisualTransformation and error semantics in this file were adapted from:
- *
- * Android Developers (2026) Button. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/button
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Configure text fields. [online]
- * Available at: https://developer.android.com/develop/ui/compose/text/user-input
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Semantics in Compose. [online]
- * Available at: https://developer.android.com/develop/ui/compose/accessibility/semantics
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Compose modifiers. [online]
- * Available at: https://developer.android.com/develop/ui/compose/modifiers
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 24
+ * This method was taken from "Buttons, OutlinedButton and BasicTextField in Compose"
+ * https://developer.android.com/develop/ui/compose/components/button
+ * Android Developers
  */
 
 import androidx.compose.foundation.BorderStroke

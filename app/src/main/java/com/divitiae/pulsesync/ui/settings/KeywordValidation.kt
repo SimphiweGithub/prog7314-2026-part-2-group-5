@@ -1,19 +1,10 @@
 package com.divitiae.pulsesync.ui.settings
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The sealed-interface result type and data objects in this file follow the Kotlin conventions documented in:
- *
- * JetBrains (n.d.) Sealed classes and interfaces. [online]
- * Available at: https://kotlinlang.org/docs/sealed-classes.html
- * [Accessed 20 September 2026].
- *
- * JetBrains (n.d.) Object declarations and expressions. [online]
- * Available at: https://kotlinlang.org/docs/object-declarations.html
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 28
+ * This method was taken from "Sealed classes and interfaces in Kotlin"
+ * https://kotlinlang.org/docs/sealed-classes.html
+ * JetBrains
  */
 
 /**

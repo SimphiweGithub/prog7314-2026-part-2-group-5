@@ -1,18 +1,8 @@
 /*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
- * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
- *
- * The Preferences and Keyword tracking endpoints in this file were adapted from:
- *
- * C# Corner (2024) Building RESTful APIs with ASP.NET Core 8. [online]
- * Available at: https://www.c-sharpcorner.com/article/building-restful-apis-with-asp-net-core/
- * [Accessed 21 September 2026].
- *
- * Google DeepMind Antigravity (2026) User Preferences & Keyword Tracking Architecture.
- * ---------------------------------------------------------------------
+ * Code Attribution No 33
+ * This method was taken from "Building RESTful APIs with ASP.NET Core 8"
+ * https://www.c-sharpcorner.com/article/building-restful-apis-with-asp-net-core/
+ * C# Corner
  */
 
 using System.Security.Claims;

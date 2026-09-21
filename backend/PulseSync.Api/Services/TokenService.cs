@@ -1,18 +1,8 @@
 /*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
- * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
- *
- * The HMAC-SHA256 JWT generation and token validation service were adapted from:
- *
- * C# Corner (2024) Generate and Validate JSON Web Token (JWT) in .NET Core. [online]
- * Available at: https://www.c-sharpcorner.com/article/generate-and-validate-json-web-token-jwt-in-net-core/
- * [Accessed 21 September 2026].
- *
- * Google DeepMind Antigravity (2026) Cryptographic Token Generation & Claims Principal Logic.
- * ---------------------------------------------------------------------
+ * Code Attribution No 38
+ * This method was taken from "Generate and Validate JSON Web Token (JWT) in .NET Core"
+ * https://www.c-sharpcorner.com/article/generate-and-validate-json-web-token-jwt-in-net-core/
+ * C# Corner
  */
 
 using System.IdentityModel.Tokens.Jwt;

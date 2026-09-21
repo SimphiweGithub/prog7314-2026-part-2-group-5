@@ -1,27 +1,10 @@
 package com.divitiae.pulsesync.ui.auth
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The stateful/stateless screen split, keyboard options/actions, safe-drawing padding and preview annotations in this file were adapted from:
- *
- * Android Developers (2026) Where to hoist state. [online]
- * Available at: https://developer.android.com/develop/ui/compose/state-hoisting
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Configure text fields. [online]
- * Available at: https://developer.android.com/develop/ui/compose/text/user-input
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) About window insets. [online]
- * Available at: https://developer.android.com/develop/ui/compose/system/insets
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Preview your UI with composable previews. [online]
- * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 20
+ * This method was taken from "Text fields and user input in Compose"
+ * https://developer.android.com/develop/ui/compose/text/user-input
+ * Android Developers
  */
 
 import android.content.res.Configuration

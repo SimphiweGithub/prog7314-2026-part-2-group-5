@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.repository
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.Article
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.local.dao.ArticleDao
@@ -24,11 +25,15 @@ class ArticleRepository(
     private val articleDao: ArticleDao,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    companion object {
+        private const val TAG = "ArticleRepository"
+    }
+
     fun observeFeed(categorySlug: String?): Flow<List<Article>> {
         val source =
             if (categorySlug.isNullOrBlank()) articleDao.observeAll()
             else articleDao.observeByCategory(categorySlug)
-        return source.map { rows -> rows.map { it.toDomain() } }
+        return source.map { list -> list.map { it.toDomain() } }
     }
 
     fun observeArticle(id: String): Flow<Article?> =
@@ -43,13 +48,18 @@ class ArticleRepository(
     }
 
     suspend fun refresh(categorySlug: String? = null): Result<Unit> = withContext(io) {
+        Log.d(TAG, "refresh: requesting remote articles feed (categorySlug=$categorySlug)")
         when (val result = safeApiCall { api.getFeed(category = categorySlug) }) {
             is Result.Success -> {
+                Log.i(TAG, "refresh: received ${result.data.articles.size} articles from network feed")
                 writeArticles(result.data.articles.map { it.toDomain() }, System.currentTimeMillis())
                 Result.Success(Unit)
             }
 
-            is Result.Failure -> result
+            is Result.Failure -> {
+                Log.w(TAG, "refresh: network feed request failed: ${result.error}")
+                result
+            }
         }
     }
 

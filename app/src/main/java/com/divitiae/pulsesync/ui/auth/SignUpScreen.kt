@@ -1,27 +1,10 @@
 package com.divitiae.pulsesync.ui.auth
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The Checkbox with toggleable row, stateful/stateless screen split, keyboard handling and preview annotations in this file were adapted from:
- *
- * Android Developers (2026) Checkbox. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/checkbox
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Where to hoist state. [online]
- * Available at: https://developer.android.com/develop/ui/compose/state-hoisting
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Configure text fields. [online]
- * Available at: https://developer.android.com/develop/ui/compose/text/user-input
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Preview your UI with composable previews. [online]
- * Available at: https://developer.android.com/develop/ui/compose/tooling/previews
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 21
+ * This method was taken from "State hoisting in Jetpack Compose"
+ * https://developer.android.com/develop/ui/compose/state-hoisting
+ * Android Developers
  */
 
 import android.content.res.Configuration

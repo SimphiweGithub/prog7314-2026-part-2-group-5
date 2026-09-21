@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.repository
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.Keyword
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.local.dao.KeywordDao
@@ -48,19 +49,27 @@ class KeywordRepository(
             createdAt = System.currentTimeMillis(),
         )
         keywordDao.upsert(entity)
+        Log.d(TAG, "addKeyword: sending keyword '${entity.keyword}' to remote API")
         val result = safeApiCall { api.addKeyword(KeywordRequestDto(entity.keyword)) }
         if (result is Result.Success) {
+            Log.i(TAG, "addKeyword: keyword '${entity.keyword}' successfully registered with serverId=${result.data.keywordId}")
             keywordDao.delete(entity.keywordId)
             val synced = entity.copy(keywordId = result.data.keywordId, isSynced = true)
             keywordDao.upsert(synced)
             synced.toDomain()
         } else {
+            Log.w(TAG, "addKeyword: failed to register keyword '${entity.keyword}' on remote API: ${(result as? Result.Failure)?.error}")
             entity.toDomain()
         }
     }
 
     suspend fun removeKeyword(id: String) = withContext(io) {
+        Log.d(TAG, "removeKeyword: removing keyword id=$id from remote API")
         keywordDao.delete(id)
         safeApiCallEmpty { api.removeKeyword(id) }
+    }
+
+    companion object {
+        private const val TAG = "KeywordRepository"
     }
 }

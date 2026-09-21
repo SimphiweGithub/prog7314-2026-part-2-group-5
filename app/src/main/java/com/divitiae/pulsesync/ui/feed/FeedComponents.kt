@@ -1,27 +1,10 @@
 package com.divitiae.pulsesync.ui.feed
 
-/*
- * ---------------------------------------------------------------------
- * CODE ATTRIBUTION
- * ---------------------------------------------------------------------
- * The infinite skeleton animation, chip styling, layout composition and formatted string resources in this file were adapted from:
- *
- * Android Developers (2026) Value-based animations. [online]
- * Available at: https://developer.android.com/develop/ui/compose/animation/value-based
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Chip. [online]
- * Available at: https://developer.android.com/develop/ui/compose/components/chip
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) Compose layout basics. [online]
- * Available at: https://developer.android.com/develop/ui/compose/layouts/basics
- * [Accessed 20 September 2026].
- *
- * Android Developers (2026) String resources. [online]
- * Available at: https://developer.android.com/guide/topics/resources/string-resource
- * [Accessed 20 September 2026].
- * ---------------------------------------------------------------------
+/**
+ * Code Attribution No 14
+ * This method was taken from "Card and Surface components in Material 3"
+ * https://developer.android.com/develop/ui/compose/components/card
+ * Android Developers
  */
 
 import androidx.compose.animation.core.LinearEasing
