@@ -37,7 +37,7 @@ builder.Services.AddControllers()
     });
 
 // Core singleton data store and services
-builder.Services.AddSingleton<IDataStore, InMemoryDataStore>();
+builder.Services.AddSingleton<IDataStore, FirestoreDataStore>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 
