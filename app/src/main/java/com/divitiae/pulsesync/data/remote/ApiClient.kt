@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.remote
 
+import android.util.Log
 import com.google.gson.GsonBuilder
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -8,6 +9,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+
+private const val TAG = "ApiClient"
 
 object ApiConstants {
     /**
@@ -28,12 +31,47 @@ class AuthInterceptor(
     private val languageProvider: () -> String,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val builder = chain.request().newBuilder()
+        val request = chain.request()
+        val builder = request.newBuilder()
             .addHeader("Accept-Language", languageProvider())
-        tokenProvider()?.let { token ->
-            if (token.isNotBlank()) builder.addHeader("Authorization", "Bearer $token")
+        val token = tokenProvider()
+        if (!token.isNullOrBlank()) {
+            Log.d(TAG, "AuthInterceptor: attaching Bearer token to [${request.method}] ${request.url}")
+            builder.addHeader("Authorization", "Bearer $token")
+        } else {
+            Log.d(TAG, "AuthInterceptor: no Bearer token attached to [${request.method}] ${request.url}")
         }
         return chain.proceed(builder.build())
+    }
+}
+
+/**
+ * Code Attribution No 5
+ * This method was taken from "Logging Interceptors in OkHttp and Android Log Utilities"
+ * https://square.github.io/okhttp/features/interceptors/
+ * Square, Inc. & Android Open Source Project
+ */
+/** Traces network call start, completion status, response codes, and errors. */
+class NetworkLifecycleInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "--> HTTP START [${request.method}] ${request.url}")
+        val response: Response
+        try {
+            response = chain.proceed(request)
+        } catch (e: Exception) {
+            val elapsed = System.currentTimeMillis() - startTime
+            Log.e(TAG, "<-- HTTP FAILED after ${elapsed}ms [${request.method}] ${request.url}: ${e.message}", e)
+            throw e
+        }
+        val elapsed = System.currentTimeMillis() - startTime
+        if (response.isSuccessful) {
+            Log.i(TAG, "<-- HTTP ${response.code} ${response.message} (${elapsed}ms) [${request.method}] ${request.url}")
+        } else {
+            Log.w(TAG, "<-- HTTP ${response.code} ${response.message} (${elapsed}ms) [${request.method}] ${request.url}")
+        }
+        return response
     }
 }
 
@@ -42,10 +80,13 @@ object ApiClient {
         tokenProvider: () -> String?,
         languageProvider: () -> String = { "en" },
     ): PulseSyncApi {
-        val logging = HttpLoggingInterceptor().apply {
+        val logging = HttpLoggingInterceptor { message ->
+            Log.d("OkHttp", message)
+        }.apply {
             level = HttpLoggingInterceptor.Level.BASIC
         }
         val client = OkHttpClient.Builder()
+            .addInterceptor(NetworkLifecycleInterceptor())
             .addInterceptor(AuthInterceptor(tokenProvider, languageProvider))
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)

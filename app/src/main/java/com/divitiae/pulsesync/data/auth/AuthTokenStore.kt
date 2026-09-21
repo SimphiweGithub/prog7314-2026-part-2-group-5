@@ -1,6 +1,7 @@
 package com.divitiae.pulsesync.data.auth
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -43,12 +44,15 @@ class AuthTokenStore(
 
     /** Warm the in-memory cache from disk at startup (called by AppContainer.initialise). */
     suspend fun load() {
+        Log.d(TAG, "load: warming in-memory token cache from encrypted storage")
         accessToken = context.authDataStore.data
             .map { prefs -> prefs[Keys.access]?.let(cipher::decrypt) }
             .first()
+        Log.d(TAG, "load complete: hasAccessToken=${accessToken != null}")
     }
 
     suspend fun save(access: String, refresh: String) {
+        Log.i(TAG, "save: encrypting and saving access and refresh tokens")
         // Encrypt before the edit block so a keystore failure never leaves a half-written pair.
         val encAccess = cipher.encrypt(access)
         val encRefresh = cipher.encrypt(refresh)
@@ -59,13 +63,20 @@ class AuthTokenStore(
         }
     }
 
-    suspend fun refreshToken(): String? =
-        context.authDataStore.data
+    suspend fun refreshToken(): String? {
+        Log.d(TAG, "refreshToken: reading refresh token from storage")
+        return context.authDataStore.data
             .map { prefs -> prefs[Keys.refresh]?.let(cipher::decrypt) }
             .first()
+    }
 
     suspend fun clear() {
+        Log.i(TAG, "clear: removing stored tokens")
         accessToken = null
         context.authDataStore.edit { it.clear() }
+    }
+
+    companion object {
+        private const val TAG = "AuthTokenStore"
     }
 }

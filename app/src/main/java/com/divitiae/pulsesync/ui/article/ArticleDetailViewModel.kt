@@ -26,6 +26,7 @@ package com.divitiae.pulsesync.ui.article
  * ---------------------------------------------------------------------
  */
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -114,6 +115,15 @@ class ArticleDetailViewModel(
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
+
+    init {
+        Log.d(TAG, "ArticleDetailViewModel initialized for articleId=$articleId")
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "ArticleDetailViewModel onCleared for articleId=$articleId")
+    }
 
     /**
      * Ephemeral editor state. Nullable fields mean "user hasn't touched this
@@ -292,6 +302,7 @@ class ArticleDetailViewModel(
     }
 
     companion object {
+        private const val TAG = "ArticleDetailViewModel"
         fun factory(articleId: String): ViewModelProvider.Factory = containerViewModelFactory { c ->
             ArticleDetailViewModel(
                 articleId = articleId,

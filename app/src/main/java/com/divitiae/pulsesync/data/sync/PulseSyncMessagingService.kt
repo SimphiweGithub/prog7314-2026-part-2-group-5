@@ -1,7 +1,9 @@
 package com.divitiae.pulsesync.data.sync
 
+import android.util.Log
 import com.divitiae.pulsesync.PulseSyncApplication
 import com.divitiae.pulsesync.data.domain.NotificationItem
+import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.remote.dto.FcmTokenRequestDto
 import com.divitiae.pulsesync.data.repository.safeApiCallEmpty
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -24,7 +26,18 @@ class PulseSyncMessagingService : FirebaseMessagingService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    override fun onCreate() {
+        super.onCreate()
+        Log.d(TAG, "PulseSyncMessagingService onCreate")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "PulseSyncMessagingService onDestroy")
+    }
+
     override fun onMessageReceived(message: RemoteMessage) {
+        Log.i(TAG, "FCM message received from=${message.from}, messageId=${message.messageId}")
         val container = (application as? PulseSyncApplication)?.container ?: return
         val data = message.data
         val item = NotificationItem(
@@ -41,9 +54,17 @@ class PulseSyncMessagingService : FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
+        Log.i(TAG, "onNewToken: new FCM registration token received; registering with backend")
         val container = (application as? PulseSyncApplication)?.container ?: return
         scope.launch {
-            safeApiCallEmpty { container.api.registerFcmToken(FcmTokenRequestDto(token)) }
+            when (val result = safeApiCallEmpty { container.api.registerFcmToken(FcmTokenRequestDto(token)) }) {
+                is Result.Success -> Log.i(TAG, "FCM registration token successfully registered with backend")
+                is Result.Failure -> Log.w(TAG, "Failed to register FCM token with backend: ${result.error}")
+            }
         }
+    }
+
+    companion object {
+        private const val TAG = "PulseSyncMsgService"
     }
 }

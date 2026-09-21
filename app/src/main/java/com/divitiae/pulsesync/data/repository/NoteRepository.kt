@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.repository
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.Note
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.local.dao.NoteDao
@@ -75,19 +76,33 @@ class NoteRepository(
         if (serverId == null) {
             noteDao.hardDelete(localId) // never synced — nothing on the server to remove
         } else {
+            Log.d(TAG, "deleteNote: deleting note with serverId=$serverId from remote API")
             val result = safeApiCallEmpty { api.deleteNote(serverId) }
-            if (result is Result.Success) noteDao.hardDelete(localId)
+            if (result is Result.Success) {
+                Log.i(TAG, "deleteNote: successfully deleted note serverId=$serverId from remote API")
+                noteDao.hardDelete(localId)
+            } else {
+                Log.w(TAG, "deleteNote: failed to delete note serverId=$serverId from remote API: ${(result as? Result.Failure)?.error}")
+            }
         }
     }
 
     /** Pushes a single note; on success stamps the server id and marks it synced. */
     private suspend fun push(note: Note) {
         val serverId = note.serverId
+        Log.d(TAG, "push: pushing note localId=${note.localId} (serverId=$serverId) to remote API")
         val result =
             if (serverId == null) safeApiCall { api.createNote(note.toCreateRequest()) }
             else safeApiCall { api.updateNote(serverId, note.toUpdateRequest()) }
         if (result is Result.Success) {
+            Log.i(TAG, "push: successfully pushed note localId=${note.localId} to serverId=${result.data.noteId}")
             noteDao.markSynced(note.localId, result.data.noteId)
+        } else {
+            Log.w(TAG, "push: failed to push note localId=${note.localId} to remote API: ${(result as? Result.Failure)?.error}")
         }
+    }
+
+    companion object {
+        private const val TAG = "NoteRepository"
     }
 }

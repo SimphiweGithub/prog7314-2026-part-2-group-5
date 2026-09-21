@@ -22,6 +22,7 @@ package com.divitiae.pulsesync.data.auth
  * ---------------------------------------------------------------------
  */
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.AppError
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.domain.UserProfile
@@ -65,13 +66,22 @@ class AuthRepository(
         googleIdToken: String,
         fcmToken: String?,
     ): Result<UserProfile> = withContext(io) {
+        Log.d(TAG, "signInWithGoogleIdToken: received Google ID token; authenticating with Firebase")
         try {
             val credential = GoogleAuthProvider.getCredential(googleIdToken, null)
             val authResult = firebaseAuth.signInWithCredential(credential).await()
             val firebaseUser = authResult.user
-                ?: return@withContext Result.Failure(AppError.Unauthorized("Firebase returned no user"))
+            if (firebaseUser == null) {
+                Log.w(TAG, "Firebase credential sign-in returned null user")
+                return@withContext Result.Failure(AppError.Unauthorized("Firebase returned no user"))
+            }
+            Log.i(TAG, "Firebase credential sign-in succeeded for uid=${firebaseUser.uid}")
             val firebaseIdToken = firebaseUser.getIdToken(false).await().token
-                ?: return@withContext Result.Failure(AppError.Unauthorized("No Firebase ID token"))
+            if (firebaseIdToken == null) {
+                Log.w(TAG, "Failed to retrieve Firebase ID token for uid=${firebaseUser.uid}")
+                return@withContext Result.Failure(AppError.Unauthorized("No Firebase ID token"))
+            }
+            Log.d(TAG, "Firebase ID token retrieved; requesting token exchange with backend API")
 
             when (
                 val exchange = safeApiCall {
@@ -79,6 +89,7 @@ class AuthRepository(
                 }
             ) {
                 is Result.Success -> {
+                    Log.i(TAG, "Backend token exchange succeeded; storing JWT tokens for userId=${exchange.data.userId}")
                     tokenStore.save(exchange.data.accessToken, exchange.data.refreshToken)
                     val profile = UserProfile(
                         userId = exchange.data.userId.ifBlank { firebaseUser.uid },
@@ -96,6 +107,7 @@ class AuthRepository(
                     // REST API is unreachable or returns 404/5xx (e.g. cold start, load shedding,
                     // or staging environment offline), proceed using the Firebase ID token and user
                     // profile so the user can access the offline/cached feed without being blocked.
+                    Log.w(TAG, "Backend token exchange failed (${exchange.error}); falling back to client-side Firebase token for offline access")
                     tokenStore.save(firebaseIdToken, firebaseIdToken)
                     val profile = UserProfile(
                         userId = firebaseUser.uid,
@@ -108,14 +120,20 @@ class AuthRepository(
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "signInWithGoogleIdToken threw exception during token exchange", e)
             Result.Failure(AppError.Unknown(e.message, e))
         }
     }
 
     suspend fun signOut() = withContext(io) {
+        Log.i(TAG, "signOut: clearing stored tokens and signing out of Firebase")
         safeApiCallEmpty { api.logout() }
         tokenStore.clear()
         runCatching { firebaseAuth.signOut() }
         userDao.clear()
+    }
+
+    companion object {
+        private const val TAG = "AuthRepository"
     }
 }

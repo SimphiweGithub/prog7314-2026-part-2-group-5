@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.repository
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.Category
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.local.dao.CategoryDao
@@ -29,17 +30,26 @@ class CategoryRepository(
     }
 
     suspend fun refresh(): Result<Unit> = withContext(io) {
+        Log.d(TAG, "refresh: fetching categories from remote API")
         when (val result = safeApiCall { api.getCategories() }) {
             is Result.Success -> {
+                Log.i(TAG, "refresh: retrieved ${result.data.size} categories from remote API")
                 categoryDao.upsertAll(result.data.map { it.toDomain().toEntity() })
                 Result.Success(Unit)
             }
 
-            is Result.Failure -> result
+            is Result.Failure -> {
+                Log.w(TAG, "refresh: failed to fetch categories from remote API: ${result.error}")
+                result
+            }
         }
     }
 
     suspend fun setSubscribed(slug: String, subscribed: Boolean) = withContext(io) {
         categoryDao.setSubscribed(slug, subscribed)
+    }
+
+    companion object {
+        private const val TAG = "CategoryRepository"
     }
 }

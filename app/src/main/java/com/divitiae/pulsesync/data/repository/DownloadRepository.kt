@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.data.repository
 
+import android.util.Log
 import com.divitiae.pulsesync.data.domain.AppError
 import com.divitiae.pulsesync.data.domain.DownloadSlot
 import com.divitiae.pulsesync.data.domain.Result
@@ -37,13 +38,16 @@ class DownloadRepository(
     suspend fun download(articleId: String): Result<Unit> = withContext(io) {
         val alreadyHeld = fullTextDao.get(articleId) != null
         if (!alreadyHeld && downloadDao.count() >= SLOT_LIMIT) {
+            Log.w(TAG, "download: offline slot limit reached ($SLOT_LIMIT slots)")
             return@withContext Result.Failure(
                 AppError.Http(409, "All $SLOT_LIMIT offline slots are in use."),
             )
         }
+        Log.d(TAG, "download: requesting full text download from remote API for articleId=$articleId")
         when (val result = safeApiCall { api.getFullText(articleId) }) {
             is Result.Success -> {
                 val dto = result.data
+                Log.i(TAG, "download: successfully retrieved full text for articleId=$articleId (${dto.sizeBytes} bytes)")
                 fullTextDao.upsert(
                     ArticleFullTextEntity(
                         articleId = articleId,
@@ -60,11 +64,15 @@ class DownloadRepository(
                 Result.Success(Unit)
             }
 
-            is Result.Failure -> result
+            is Result.Failure -> {
+                Log.w(TAG, "download: failed to retrieve full text for articleId=$articleId: ${result.error}")
+                result
+            }
         }
     }
 
     suspend fun remove(articleId: String) = withContext(io) {
+        Log.d(TAG, "remove: releasing download slot for articleId=$articleId")
         fullTextDao.delete(articleId)
         downloadDao.delete(articleId)
         articleDao.setDownloaded(articleId, false)
@@ -72,6 +80,7 @@ class DownloadRepository(
     }
 
     companion object {
+        private const val TAG = "DownloadRepository"
         const val SLOT_LIMIT = 5
     }
 }

@@ -21,6 +21,7 @@ package com.divitiae.pulsesync
  */
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,9 +42,49 @@ import com.divitiae.pulsesync.ui.theme.PulseSyncTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.i(TAG, "onCreate: savedInstanceState is ${if (savedInstanceState == null) "null" else "non-null"}")
         // Adapted from: Android Developers (2026) Display content edge-to-edge in views. https://developer.android.com/develop/ui/views/layout/edge-to-edge
         enableEdgeToEdge()
         setContent { PulseSyncApp() }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.d(TAG, "onStart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "onResume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "onPause")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d(TAG, "onStop")
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        Log.d(TAG, "onRestart")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        Log.d(TAG, "onSaveInstanceState")
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
     }
 }
 

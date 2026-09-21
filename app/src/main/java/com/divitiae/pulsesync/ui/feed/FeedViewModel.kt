@@ -1,5 +1,6 @@
 package com.divitiae.pulsesync.ui.feed
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -46,6 +47,10 @@ class FeedViewModel(
     private val preferencesRepository: PreferencesRepository,
     private val downloadRepository: DownloadRepository,
 ) : ViewModel() {
+
+    init {
+        Log.d(TAG, "FeedViewModel initialized")
+    }
 
     /** Ephemeral, UI-only controls kept in one flow so `combine` stays at 5 sources. */
     private data class Controls(
@@ -134,7 +139,13 @@ class FeedViewModel(
         _refreshError.value = null
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "FeedViewModel onCleared")
+    }
+
     companion object {
+        private const val TAG = "FeedViewModel"
         val Factory: ViewModelProvider.Factory = containerViewModelFactory { c ->
             FeedViewModel(
                 articleRepository = c.articleRepository,
