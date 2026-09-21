@@ -1,3 +1,24 @@
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
+ * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
+ *
+ * The thread-safe in-memory datastore patterns and concurrent collection usage were adapted from:
+ *
+ * C# Corner (2024) Working with Concurrent Collections in C#. [online]
+ * Available at: https://www.c-sharpcorner.com/article/working-with-concurrent-collections-in-c-sharp/
+ * [Accessed 21 September 2026].
+ *
+ * Microsoft Learn (2024) ConcurrentDictionary Class. [online]
+ * Available at: https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentdictionary-2
+ * [Accessed 21 September 2026].
+ *
+ * Google DeepMind Antigravity (2026) Thread-Safe In-Memory Repository & Seed Data Integration.
+ * ---------------------------------------------------------------------
+ */
+
 using System.Collections.Concurrent;
 using PulseSync.Api.Data;
 using PulseSync.Api.Models;

@@ -1,3 +1,24 @@
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
+ * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
+ *
+ * The SSO authentication controller and token exchange workflow were adapted from:
+ *
+ * C# Corner (2024) How to Implement Refresh Token in ASP.NET Core Web API. [online]
+ * Available at: https://www.c-sharpcorner.com/article/how-to-implement-refresh-token-in-asp-net-core-web-api/
+ * [Accessed 21 September 2026].
+ *
+ * Google Firebase (2024) Verify ID Tokens using Firebase Admin SDK. [online]
+ * Available at: https://firebase.google.com/docs/auth/admin/verify-id-tokens
+ * [Accessed 21 September 2026].
+ *
+ * Google DeepMind Antigravity (2026) AI Pair Programming and SSO Token Exchange Scaffolding.
+ * ---------------------------------------------------------------------
+ */
+
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
 using PulseSync.Api.Services;

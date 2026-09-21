@@ -1,3 +1,20 @@
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
+ * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
+ *
+ * The xUnit unit test structure, Moq mock arrangements, and FluentAssertions were adapted from:
+ *
+ * C# Corner (2024) Unit Testing in ASP.NET Core Web API Using xUnit and Moq. [online]
+ * Available at: https://www.c-sharpcorner.com/article/unit-testing-in-asp-net-core-web-api-using-xunit-and-moq/
+ * [Accessed 21 September 2026].
+ *
+ * Google DeepMind Antigravity (2026) Automated Test Suite Scaffolding & Assertion Design.
+ * ---------------------------------------------------------------------
+ */
+
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

@@ -1,3 +1,20 @@
+/*
+ * ---------------------------------------------------------------------
+ * CODE ATTRIBUTION
+ * ---------------------------------------------------------------------
+ * Author: Simphiwe Khumalo (ST10451674) - Member 3: Back-End & Data Architect
+ * Assisted by: Antigravity AI Coding Assistant (Google DeepMind)
+ *
+ * The CRUD actions, route parameter binding, and HTTP response mapping were adapted from:
+ *
+ * C# Corner (2024) CRUD Operations in ASP.NET Core Web API. [online]
+ * Available at: https://www.c-sharpcorner.com/article/crud-operations-in-asp-net-core-web-api/
+ * [Accessed 21 September 2026].
+ *
+ * Google DeepMind Antigravity (2026) Contextual Note CRUD & Tag Aggregation Logic.
+ * ---------------------------------------------------------------------
+ */
+
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
