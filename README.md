@@ -297,7 +297,7 @@ sequenceDiagram
     participant API as ASP.NET Core API (Render)
     participant GEM as Gemini 2.5 Flash
     participant FS as Cloud Firestore
-    participant AND as Android Client (Room/UI)
+    participant APP as Android Client (Room/UI)
     participant WM as WorkManager (SyncWorker)
     participant FCM as Firebase Cloud Messaging
 
@@ -310,32 +310,32 @@ sequenceDiagram
     GEM-->>API: 5. Return JSON (Detailed + Condensed)
     API->>FS: 6. Persist articles/{id} & articleFullText/{id}
     API->>FCM: 7. Dispatch push notification for matched keywords
-    FCM-->>AND: 8. Deliver high-priority FCM push alert
+    FCM-->>APP: 8. Deliver high-priority FCM push alert
 
     %% Stage 2: User Launch & Feed Fetch
     Note over AND,FS: User Authentication & Feed Hydration
-    AND->>API: 9. POST auth/google (Exchange Firebase ID Token)
-    API-->>AND: 10. Return PulseSync JWT Access & Refresh Tokens
-    AND->>API: 11. GET articles (Authorization: Bearer JWT)
+    APP->>API: 9. POST auth/google (Exchange Firebase ID Token)
+    API-->>APP: 10. Return PulseSync JWT Access & Refresh Tokens
+    APP->>API: 11. GET articles (Authorization: Bearer JWT)
     API->>FS: 12. Query active articles by category & cursor
     FS-->>API: 13. Return document snapshots
-    API-->>AND: 14. Return lightweight FeedResponse JSON
-    AND->>AND: 15. Upsert ArticleEntity & ExtractedLinkEntity to Room
-    AND->>AND: 16. UI observes Room Flow (Instant render)
+    API-->>APP: 14. Return lightweight FeedResponse JSON
+    APP->>APP: 15. Upsert ArticleEntity & ExtractedLinkEntity to Room
+    APP->>APP: 16. UI observes Room Flow (Instant render)
 
-    %% Stage 3: Offline Note Creation & Sync
-    Note over AND,WM: Load Shedding / Offline Operation
-    AND->>AND: 17. User writes note offline -> Insert NoteEntity (isSynced=0)
-    AND->>AND: 18. Update notes_fts virtual table for instant search
-    AND->>AND: 19. Record entry in SyncQueueEntity
+  %% Stage 3: Offline Note Creation & Sync
+    Note over APP,WM: Load Shedding / Offline Operation
+    APP->>APP: 17. User writes note offline -> Insert NoteEntity (isSynced=0)
+    APP->>APP: 18. Update notes_fts virtual table for instant search
+    APP->>APP: 19. Record entry in SyncQueueEntity
     Note over WM,API: Network Reconnected (CONNECTED Constraint Satisfied)
     WM->>API: 20. POST sync/push (Pending notes, keywords, deletes)
     API->>FS: 21. Reconcile changes (Last-Write-Wins)
     API-->>WM: 22. Return serverId mappings & conflict resolutions
-    WM->>AND: 23. Update Room (markSynced=1, assign serverId)
+    WM->>APP: 23. Update Room (markSynced=1, assign serverId)
     WM->>API: 24. GET sync/pull (lastSyncTimestamp)
     API-->>WM: 25. Return newly ingested articles and remote changes
-    WM->>AND: 26. Upsert latest records into Room
+    WM->>APP: 26. Upsert latest records into Room
 ```
 
 ### 5.3 A4-Compliant ASCII Architecture Diagram
