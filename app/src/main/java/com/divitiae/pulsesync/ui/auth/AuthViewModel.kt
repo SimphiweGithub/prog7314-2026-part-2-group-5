@@ -8,6 +8,7 @@ import com.divitiae.pulsesync.data.auth.AuthRepository
 import com.divitiae.pulsesync.data.auth.AuthTokenStore
 import com.divitiae.pulsesync.data.auth.SessionManager
 import com.divitiae.pulsesync.data.domain.AppError
+import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.domain.UserProfile
 import com.divitiae.pulsesync.ui.common.UiState
 import com.divitiae.pulsesync.ui.common.toUiState
@@ -66,7 +67,7 @@ class AuthViewModel(
             // AppContainer.initialise() also calls load(), but racing it here is
             // harmless (idempotent) and guarantees the value is fresh before we route.
             tokenStore.load()
-            _hasExistingSession.value = tokenStore.accessToken != null
+            _hasExistingSession.value = tokenStore.accessToken != null || tokenStore.isOfflineSession
         }
         viewModelScope.launch {
             sessionManager.sessionExpired.collect { expired ->
@@ -93,9 +94,17 @@ class AuthViewModel(
 
         viewModelScope.launch {
             val fcmToken = fetchFcmTokenOrNull()
-            _signInState.value = authRepository
-                .signInWithGoogleIdToken(googleIdToken, fcmToken)
-                .toUiState()
+            val result = authRepository.signInWithGoogleIdToken(googleIdToken, fcmToken)
+            _signInState.value = when (result) {
+                is Result.Success -> UiState.Success(result.data.profile)
+                is Result.Failure -> result.error.toUiState()
+            }
+            // The user still gets in, but the app must say why the feed is cache-only.
+            val serverError = (result as? Result.Success)?.data?.serverError
+            if (serverError != null) {
+                Log.w(TAG, "Signed in with an offline session; API unreachable: $serverError")
+                _events.value = AuthEvent.SignedInOffline(serverError)
+            }
         }
     }
 
@@ -180,4 +189,6 @@ sealed interface AuthEvent {
     data object EmailNotAvailable : AuthEvent
     /** The API returned 401 for the stored token; the user was sent back to Sign In. */
     data object SessionExpired : AuthEvent
+    /** Google/Firebase accepted the user but the API was unreachable; the app entered in offline mode. */
+    data class SignedInOffline(val error: AppError) : AuthEvent
 }

@@ -217,6 +217,13 @@ On the client, [SessionManager.kt](app/src/main/java/com/divitiae/pulsesync/data
 
 **Client.** Access tokens expire after two hours. [TokenAuthenticator.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/TokenAuthenticator.kt) is registered as the OkHttp `Authenticator`: on a 401 for a request that carried a Bearer token it calls `/auth/refresh` through a token-less client, stores the new pair in the encrypted `AuthTokenStore`, and replays the request once. Concurrent 401s are serialised with a lock, so only the first caller refreshes and the rest reuse the rotated token. Only when refresh itself fails does the 401 reach `AuthInterceptor` and the session-expiry flow in 3.5.
 
+### 3.7 Offline Sign-In (Visible Fallback)
+Google and Firebase can accept a user while the PulseSync API is unreachable (no connectivity, Render cold start, 5xx). [AuthRepository.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/AuthRepository.kt) handles that case explicitly instead of masking it:
+- The exchange failure is classified. **Outages** (`AppError.Network`, `Http 404/5xx`, `Unknown`) trigger the fallback; a credential the API **rejected** (`Unauthorized`, other 4xx) is returned as a real sign-in failure.
+- On an outage the app enters an **offline session**: `AuthTokenStore.markOfflineSession()` records the state, no token is stored (the Firebase ID token is never used as an API token), and the profile is cached in Room so the user still lands on the Feed with cached content.
+- The result is `SignIn(profile, serverError)`; `AuthViewModel` raises `AuthEvent.SignedInOffline`, and `PulseSyncNavHost` shows an app-level Snackbar ("Signed in offline: the PulseSync server could not be reached...") that survives the navigation away from Sign In. The fallback is logged at warning level.
+- `AppContainer` watches `NetworkMonitor.isOnline`; when the device is back online `completePendingExchange()` asks Firebase for a fresh ID token, retries `/auth/google`, and silently upgrades the session to a real JWT.
+
 ---
 
 ## 4. CI/CD Pipeline & Cloud Deployment Strategy
@@ -236,7 +243,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 │  • Android SDK CLI & CMake           │  │  • Docker multi-stage build      │
 │  • Step 1: Compile Kotlin + KSP      │  │  • ASP.NET Core 8 Web API Linux  │
 │  • Step 2: Execute JUnit Test Suite  │  │  • Automated SSL / TLS 1.3       │
-│    (.\gradlew.bat test - 69 tests)   │  │  • Zero-downtime rolling restart │
+│    (.\gradlew.bat test - 77 tests)   │  │  • Zero-downtime rolling restart │
 │  • Step 3: Compile Debug APK         │  │  • Health probe verification     │
 │    (.\gradlew.bat assembleDebug)     │  │  • Base URL live:                │
 │  • Artifact Upload: debug.apk        │  │    https://pulsesync-api.        │
@@ -247,7 +254,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 ### 4.1 Continuous Integration (GitHub Actions)
 - **Triggers:** Automated validation fires on all pull requests and direct pushes to `main`.
 - **Validation Gates:**
-  1. **Unit Test Execution:** Runs all 69 test cases across input validation, DTO deserialization, coroutine ViewModel state, session-expiry and token-refresh tests (`.\gradlew.bat test`).
+  1. **Unit Test Execution:** Runs all 77 test cases across input validation, DTO deserialization, coroutine ViewModel state, session-expiry, token-refresh and offline sign-in tests (`.\gradlew.bat test`).
   2. **Assembly & Linting:** Validates KSP Room schema generation and compiles the Android package (`.\gradlew.bat assembleDebug`).
   3. **Build Artifacts:** Packages and archives unsigned debug APK artifacts for integration testing.
 
@@ -437,13 +444,14 @@ sequenceDiagram
 A comprehensive test suite was implemented in `app/src/test/java/com/divitiae/pulsesync/` executing directly on the JVM without requiring slow Android emulators or instrumentation overhead.
 
 ```
-Total tests: 69 | Failures: 0 | Skipped: 0 | Success rate: 100%
+Total tests: 77 | Failures: 0 | Skipped: 0 | Success rate: 100%
   ├── InputValidationTest: 10 passed (100%)
   ├── DtoMapperTest:       11 passed (100%)
   ├── ViewModelStateTest:  25 passed (100%)
   ├── SettingsViewModelTest: 10 passed (100%)
   ├── SessionExpiryTest:     7 passed (100%)
   ├── TokenAuthenticatorTest: 5 passed (100%)
+  ├── OfflineSignInTest:     8 passed (100%)
   └── SmokeTest:            1 passed (100%)
 ```
 
@@ -512,6 +520,12 @@ Location: [TokenAuthenticatorTest.kt](app/src/test/java/com/divitiae/pulsesync/T
 ### 6.8 Backend Refresh & Firebase Verification Tests (xUnit)
 - [AuthControllerTests.cs](backend/PulseSync.Tests/AuthControllerTests.cs): empty refresh token → 400; unknown token → 401; a stored token rotates the pair for **its** user and the consumed token is rejected on replay; refresh after logout → 401.
 - [FirebaseAuthServiceTests.cs](backend/PulseSync.Tests/FirebaseAuthServiceTests.cs): a blank token, a malformed token, and a self-signed token carrying Firebase-shaped claims are all rejected; the last case is what the previous claim-decoding implementation would have accepted.
+
+### 6.9 Offline Sign-In Tests
+Location: [OfflineSignInTest.kt](app/src/test/java/com/divitiae/pulsesync/OfflineSignInTest.kt) (Firebase Auth and the Retrofit API are mocked; `Tasks.forResult` stands in for the Firebase task pipeline)
+- **Classification:** network errors, HTTP 404/5xx and unknown failures count as outages; 401 and other 4xx do not.
+- **Repository:** an API outage yields `SignIn(isOffline = true)`, marks the offline session, caches the profile and never saves a token; a 401 from the API fails the sign-in outright; a successful exchange stores the JWT pair and is online; `completePendingExchange()` upgrades an offline session on reconnect and is a no-op for online sessions.
+- **ViewModel:** an offline result still transitions to `Success` (the user enters the app) and raises `AuthEvent.SignedInOffline`; an offline session on disk counts as an existing session at startup.
 
 ---
 
@@ -808,6 +822,11 @@ All method and architecture-level attributions across the Android client, testin
     - *URL:* https://github.com/square/okhttp/tree/master/mockwebserver
     - *Author:* Square, Inc.
 
+52. **Code Attribution No 52** &mdash; [OfflineSignInTest.kt](app/src/test/java/com/divitiae/pulsesync/OfflineSignInTest.kt)
+    - *This method was taken from:* "Testing ViewModels with StateFlow and runTest"
+    - *URL:* https://developer.android.com/topic/architecture/ui-layer/state-production#testing
+    - *Author:* Android Developers
+
 ---
 
 ## 9. Build & Verification Instructions
@@ -821,7 +840,7 @@ All method and architecture-level attributions across the Android client, testin
 ```powershell
 .\gradlew.bat test
 ```
-Executes all 69 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, `SessionExpiryTest`, `TokenAuthenticatorTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
+Executes all 77 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, `SessionExpiryTest`, `TokenAuthenticatorTest`, `OfflineSignInTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ### 9.3 Running Backend Tests
 ```powershell

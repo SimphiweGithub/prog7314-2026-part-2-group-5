@@ -3,6 +3,7 @@ package com.divitiae.pulsesync
 import com.divitiae.pulsesync.data.auth.AuthRepository
 import com.divitiae.pulsesync.data.auth.AuthTokenStore
 import com.divitiae.pulsesync.data.auth.SessionManager
+import com.divitiae.pulsesync.data.auth.SignIn
 import com.divitiae.pulsesync.data.domain.AppError
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.domain.UserProfile
@@ -238,7 +239,7 @@ class ViewModelStateTest {
         val tokenStore: AuthTokenStore = mock()
         whenever(tokenStore.accessToken).thenReturn(null)
         whenever(authRepository.signInWithGoogleIdToken(eq("google-id-token-valid"), anyOrNull()))
-            .thenReturn(Result.Success(sampleUser))
+            .thenReturn(Result.Success(SignIn(sampleUser)))
 
         val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()

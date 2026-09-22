@@ -128,6 +128,7 @@
     <string name="auth_error_google_generic">Google sign-in failed. Please try again.</string>
     <string name="auth_error_google_not_configured">Google sign-in is not set up for this build yet (missing SHA-1 or provider in Firebase).</string>
     <string name="auth_error_google_no_id_token">Google did not return a sign-in token. Please try again.</string>
+    <string name="auth_signed_in_offline">Signed in offline: the PulseSync server could not be reached. Showing cached content until the connection is restored.</string>
     <string name="auth_email_not_available">Email sign-in is not available in this build continue with Google.</string>
 
     <!-- Article detail: DualMode toggle (User Defined 1) -->

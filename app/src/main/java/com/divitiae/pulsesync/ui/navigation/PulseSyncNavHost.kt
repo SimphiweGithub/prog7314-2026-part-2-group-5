@@ -1,10 +1,21 @@
 package com.divitiae.pulsesync.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.divitiae.pulsesync.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -13,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.divitiae.pulsesync.ui.article.ArticleDetailScreen
+import com.divitiae.pulsesync.ui.auth.AuthEvent
 import com.divitiae.pulsesync.ui.auth.AuthViewModel
 import com.divitiae.pulsesync.ui.auth.SignInRoute
 import com.divitiae.pulsesync.ui.auth.SignUpRoute
@@ -81,11 +93,24 @@ fun PulseSyncNavHost(
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
-    ) {
+    // Shown above whichever screen is current, because sign-in immediately
+    // navigates away from the auth screens and would take their Snackbar with it.
+    val snackbarHostState = remember { SnackbarHostState() }
+    val authEvent by authViewModel.events.collectAsState()
+    val signedInOffline = stringResource(R.string.auth_signed_in_offline)
+    LaunchedEffect(authEvent) {
+        if (authEvent is AuthEvent.SignedInOffline) {
+            authViewModel.consumeEvent()
+            snackbarHostState.showSnackbar(signedInOffline, duration = SnackbarDuration.Long)
+        }
+    }
+
+    Box(modifier = modifier) {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         composable(Routes.SIGN_IN) {
             SignInRoute(
                 viewModel = authViewModel,
@@ -146,5 +171,13 @@ fun PulseSyncNavHost(
                 )
             }
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
+        )
     }
 }

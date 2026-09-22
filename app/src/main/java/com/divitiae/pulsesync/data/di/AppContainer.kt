@@ -94,7 +94,14 @@ class AppContainer(context: Context) {
 
     /** Warms caches and seeds the offline database on startup. */
     fun initialise() {
-        scope.launch { authTokenStore.load() }
+        scope.launch {
+            authTokenStore.load()
+            // An offline session (sign-in succeeded, API exchange did not) is
+            // upgraded to a real one the next time the device is online.
+            networkMonitor.isOnline.collect { online ->
+                if (online && authTokenStore.isOfflineSession) authRepository.completePendingExchange()
+            }
+        }
         scope.launch {
             database.userDao().observeCurrent().collect { cachedUserId = it?.userId ?: "local" }
         }
