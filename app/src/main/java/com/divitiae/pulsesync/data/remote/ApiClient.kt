@@ -2,6 +2,7 @@ package com.divitiae.pulsesync.data.remote
 
 import android.util.Log
 import com.google.gson.GsonBuilder
+import okhttp3.Authenticator
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -96,10 +97,16 @@ class NetworkLifecycleInterceptor : Interceptor {
 }
 
 object ApiClient {
+    /**
+     * @param authenticator optional silent-refresh hook (see
+     *   [com.divitiae.pulsesync.data.auth.TokenAuthenticator]); it runs before
+     *   [onUnauthorized], so a 401 only expires the session once refresh failed.
+     */
     fun create(
         tokenProvider: () -> String?,
         languageProvider: () -> String = { "en" },
         onUnauthorized: () -> Unit = {},
+        authenticator: Authenticator? = null,
     ): PulseSyncApi {
         val logging = HttpLoggingInterceptor { message ->
             Log.d("OkHttp", message)
@@ -110,6 +117,7 @@ object ApiClient {
             .addInterceptor(NetworkLifecycleInterceptor())
             .addInterceptor(AuthInterceptor(tokenProvider, languageProvider, onUnauthorized))
             .addInterceptor(logging)
+            .apply { authenticator?.let { authenticator(it) } }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

@@ -210,6 +210,13 @@ On the client, [SessionManager.kt](app/src/main/java/com/divitiae/pulsesync/data
 2. `SessionManager` wipes the encrypted token store exactly once, even when several parallel requests fail together, and raises `sessionExpired`.
 3. `PulseSyncNavHost` observes the flag, clears the back stack and lands on Sign In, where `AuthViewModel` queues an `AuthEvent.SessionExpired` so the screen shows "Your session has expired. Please sign in again."
 
+### 3.6 Firebase ID Token Verification & Silent Token Refresh
+**Sign-in (`POST /auth/google`).** [FirebaseAuthService.cs](backend/PulseSync.Api/Services/FirebaseAuthService.cs) verifies the Firebase ID token with the Firebase Admin SDK (`FirebaseAuth.VerifyIdTokenAsync`): the RS256 signature is checked against Google's public keys and the issuer, audience (project id) and expiry are validated. A forged token with plausible claims, a malformed token, or a server without Firebase credentials all yield 401 (fail closed). Credentials come from the same `FIREBASE_CREDENTIALS_JSON` variable Firestore uses.
+
+**Refresh (`POST /auth/refresh`).** The refresh token must match the one stored for its user (`IDataStore.FindUserIdByRefreshToken`). Every use rotates the pair, so a replayed token and a token revoked by logout are both rejected with 401. Firestore keeps a SHA-256 hash of the current refresh token per user in the `refreshTokens` collection, so sessions survive a Render redeploy.
+
+**Client.** Access tokens expire after two hours. [TokenAuthenticator.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/TokenAuthenticator.kt) is registered as the OkHttp `Authenticator`: on a 401 for a request that carried a Bearer token it calls `/auth/refresh` through a token-less client, stores the new pair in the encrypted `AuthTokenStore`, and replays the request once. Concurrent 401s are serialised with a lock, so only the first caller refreshes and the rest reuse the rotated token. Only when refresh itself fails does the 401 reach `AuthInterceptor` and the session-expiry flow in 3.5.
+
 ---
 
 ## 4. CI/CD Pipeline & Cloud Deployment Strategy
@@ -229,7 +236,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 │  • Android SDK CLI & CMake           │  │  • Docker multi-stage build      │
 │  • Step 1: Compile Kotlin + KSP      │  │  • ASP.NET Core 8 Web API Linux  │
 │  • Step 2: Execute JUnit Test Suite  │  │  • Automated SSL / TLS 1.3       │
-│    (.\gradlew.bat test - 64 tests)   │  │  • Zero-downtime rolling restart │
+│    (.\gradlew.bat test - 69 tests)   │  │  • Zero-downtime rolling restart │
 │  • Step 3: Compile Debug APK         │  │  • Health probe verification     │
 │    (.\gradlew.bat assembleDebug)     │  │  • Base URL live:                │
 │  • Artifact Upload: debug.apk        │  │    https://pulsesync-api.        │
@@ -240,7 +247,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 ### 4.1 Continuous Integration (GitHub Actions)
 - **Triggers:** Automated validation fires on all pull requests and direct pushes to `main`.
 - **Validation Gates:**
-  1. **Unit Test Execution:** Runs all 64 test cases across input validation, DTO deserialization, coroutine ViewModel state and session-expiry tests (`.\gradlew.bat test`).
+  1. **Unit Test Execution:** Runs all 69 test cases across input validation, DTO deserialization, coroutine ViewModel state, session-expiry and token-refresh tests (`.\gradlew.bat test`).
   2. **Assembly & Linting:** Validates KSP Room schema generation and compiles the Android package (`.\gradlew.bat assembleDebug`).
   3. **Build Artifacts:** Packages and archives unsigned debug APK artifacts for integration testing.
 
@@ -430,12 +437,13 @@ sequenceDiagram
 A comprehensive test suite was implemented in `app/src/test/java/com/divitiae/pulsesync/` executing directly on the JVM without requiring slow Android emulators or instrumentation overhead.
 
 ```
-Total tests: 64 | Failures: 0 | Skipped: 0 | Success rate: 100%
+Total tests: 69 | Failures: 0 | Skipped: 0 | Success rate: 100%
   ├── InputValidationTest: 10 passed (100%)
   ├── DtoMapperTest:       11 passed (100%)
   ├── ViewModelStateTest:  25 passed (100%)
   ├── SettingsViewModelTest: 10 passed (100%)
   ├── SessionExpiryTest:     7 passed (100%)
+  ├── TokenAuthenticatorTest: 5 passed (100%)
   └── SmokeTest:            1 passed (100%)
 ```
 
@@ -494,6 +502,16 @@ Location: [AuthorizationTests.cs](backend/PulseSync.Tests/AuthorizationTests.cs)
 - Drives the real ASP.NET Core pipeline through `WebApplicationFactory<Program>` with Firestore swapped for `InMemoryDataStore`.
 - Asserts 401 + `WWW-Authenticate: Bearer` for every per-user endpoint without a token, 401 for a token whose signature was tampered with, 200 for the public feed endpoints, that notes created by one user are invisible to another, and that logout requires a token.
 - Existing controller tests attach a `ClaimsPrincipal` via [TestPrincipal.cs](backend/PulseSync.Tests/TestPrincipal.cs), mirroring what the JWT middleware sets after validation.
+
+### 6.7 Token Refresh Tests
+Location: [TokenAuthenticatorTest.kt](app/src/test/java/com/divitiae/pulsesync/TokenAuthenticatorTest.kt) (MockWebServer, real OkHttp pipeline)
+- An expired access token is refreshed and the request replayed with the new Bearer; the new pair is saved and the session is **not** expired.
+- A rejected refresh lets the 401 through and expires the session exactly once, without saving anything.
+- A request that carried no token is never refreshed; a token already rotated by another request is reused without a second refresh; a replay that is rejected again gives up after one retry.
+
+### 6.8 Backend Refresh & Firebase Verification Tests (xUnit)
+- [AuthControllerTests.cs](backend/PulseSync.Tests/AuthControllerTests.cs): empty refresh token → 400; unknown token → 401; a stored token rotates the pair for **its** user and the consumed token is rejected on replay; refresh after logout → 401.
+- [FirebaseAuthServiceTests.cs](backend/PulseSync.Tests/FirebaseAuthServiceTests.cs): a blank token, a malformed token, and a self-signed token carrying Firebase-shaped claims are all rejected; the last case is what the previous claim-decoding implementation would have accepted.
 
 ---
 
@@ -775,6 +793,21 @@ All method and architecture-level attributions across the Android client, testin
     - *URL:* https://github.com/square/okhttp/tree/master/mockwebserver
     - *Author:* Square, Inc.
 
+49. **Code Attribution No 49** &mdash; [FirebaseAuthServiceTests.cs](backend/PulseSync.Tests/FirebaseAuthServiceTests.cs)
+    - *This method was taken from:* "Verify ID Tokens using Firebase Admin SDK"
+    - *URL:* https://firebase.google.com/docs/auth/admin/verify-id-tokens
+    - *Author:* Google Firebase
+
+50. **Code Attribution No 50** &mdash; [TokenAuthenticator.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/TokenAuthenticator.kt)
+    - *This method was taken from:* "OkHttp Authenticator: Handling authentication challenges and token refresh"
+    - *URL:* https://square.github.io/okhttp/recipes/#handling-authentication-kt-java
+    - *Author:* Square, Inc.
+
+51. **Code Attribution No 51** &mdash; [TokenAuthenticatorTest.kt](app/src/test/java/com/divitiae/pulsesync/TokenAuthenticatorTest.kt)
+    - *This method was taken from:* "MockWebServer: scriptable web server for testing HTTP clients"
+    - *URL:* https://github.com/square/okhttp/tree/master/mockwebserver
+    - *Author:* Square, Inc.
+
 ---
 
 ## 9. Build & Verification Instructions
@@ -788,13 +821,13 @@ All method and architecture-level attributions across the Android client, testin
 ```powershell
 .\gradlew.bat test
 ```
-Executes all 64 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, `SessionExpiryTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
+Executes all 69 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, `SessionExpiryTest`, `TokenAuthenticatorTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ### 9.3 Running Backend Tests
 ```powershell
 dotnet test backend/PulseSync.Tests/PulseSync.Tests.csproj
 ```
-Executes all 28 xUnit tests (controller unit tests plus the HTTP-level authorization suite). Requires the .NET 8 SDK; on a machine that only has a newer runtime installed, prefix the command with `$env:DOTNET_ROLL_FORWARD='Major';`.
+Executes all 35 xUnit tests (controller unit tests, the HTTP-level authorization suite, refresh-token rotation and Firebase ID token verification). Requires the .NET 8 SDK; on a machine that only has a newer runtime installed, prefix the command with `$env:DOTNET_ROLL_FORWARD='Major';`.
 
 ### 9.4 Compiling Debug APK
 ```powershell

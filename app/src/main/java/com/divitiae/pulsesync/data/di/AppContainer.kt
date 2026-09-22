@@ -4,9 +4,12 @@ import android.content.Context
 import com.divitiae.pulsesync.data.auth.AuthRepository
 import com.divitiae.pulsesync.data.auth.AuthTokenStore
 import com.divitiae.pulsesync.data.auth.SessionManager
+import com.divitiae.pulsesync.data.auth.TokenAuthenticator
+import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.local.PulseSyncDatabase
 import com.divitiae.pulsesync.data.remote.ApiClient
 import com.divitiae.pulsesync.data.remote.PulseSyncApi
+import com.divitiae.pulsesync.data.remote.dto.RefreshRequestDto
 import com.divitiae.pulsesync.data.repository.ArticleRepository
 import com.divitiae.pulsesync.data.repository.CategoryRepository
 import com.divitiae.pulsesync.data.repository.DownloadRepository
@@ -14,6 +17,7 @@ import com.divitiae.pulsesync.data.repository.KeywordRepository
 import com.divitiae.pulsesync.data.repository.NoteRepository
 import com.divitiae.pulsesync.data.repository.NotificationRepository
 import com.divitiae.pulsesync.data.repository.PreferencesRepository
+import com.divitiae.pulsesync.data.repository.safeApiCall
 import com.divitiae.pulsesync.data.sync.NetworkMonitor
 import com.divitiae.pulsesync.data.sync.SyncManager
 import com.google.firebase.auth.FirebaseAuth
@@ -21,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * Manual dependency container (no Hilt). Built once in [com.divitiae.pulsesync.PulseSyncApplication]
@@ -44,10 +49,26 @@ class AppContainer(context: Context) {
     val sessionManager = SessionManager(authTokenStore, scope)
     private val database = PulseSyncDatabase.get(appContext)
 
+    // Token-less client used only to call POST /auth/refresh: it must not
+    // carry the (rejected) access token and must not itself try to refresh.
+    private val refreshApi: PulseSyncApi = ApiClient.create(
+        tokenProvider = { null },
+        languageProvider = { preferencesRepository.languageTagBlocking() },
+    )
+
     val api: PulseSyncApi = ApiClient.create(
         tokenProvider = { authTokenStore.accessToken },
         languageProvider = { preferencesRepository.languageTagBlocking() },
         onUnauthorized = sessionManager::onUnauthorized,
+        authenticator = TokenAuthenticator(authTokenStore) { refreshToken ->
+            // Runs on an OkHttp thread inside the authenticator, so blocking is fine.
+            runBlocking {
+                when (val result = safeApiCall { refreshApi.refresh(RefreshRequestDto(refreshToken)) }) {
+                    is Result.Success -> result.data
+                    is Result.Failure -> null
+                }
+            }
+        },
     )
 
     val networkMonitor = NetworkMonitor(appContext)
