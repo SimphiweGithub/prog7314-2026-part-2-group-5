@@ -40,7 +40,7 @@ South African tertiary students face acute structural friction in accessing time
 | **Offline Research Vault** | Local Room entity persistence with SQLite FTS4 virtual table (`notes_fts`). | Sub-millisecond full-text note searching and local document tagging during grid outages. |
 | **Background Synchronization** | Jetpack WorkManager (`SyncWorker`) with `NetworkType.CONNECTED` constraints and exponential backoff. | Seamless automatic two-way syncing of offline notes and keyword alerts when connectivity returns. |
 | **5-Slot Storage Quota Manager** | Atomic slot lease/release logic enforced both in client RoomDB and REST API (HTTP 409). | Protects low-cost student smartphone internal flash storage from exhaustion. |
-| **Multi-Lingual Localization** | Custom BCP-47 language tag negotiation (`en`, `zu`, `af`) via Retrofit HTTP headers. | Native support for South African official languages: English, isiZulu, and Afrikaans. |
+| **Multi-Lingual Localization - POE** | Custom BCP-47 language tag negotiation (`en`, `zu`, `af`) via Retrofit HTTP headers. | Native support for South African official languages: English, isiZulu, and Afrikaans. |
 | **Google SSO & Android Keystore** | OpenID Connect token exchange with Firebase Auth; AES-256-GCM JWT encryption via Android Keystore. | Frictionless single-sign-on without insecure local password persistence. |
 
 ---
