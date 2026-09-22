@@ -5,7 +5,7 @@
 > **Technology Stack:** Native Kotlin, Jetpack Compose, Material 3, Android Architecture Components (MVVM), Room (SQLite + FTS4), Retrofit 2, OkHttp 3, WorkManager, Firebase (Auth, Firestore, FCM), Google Gemini 2.5 Flash.  
 > **Target Platform:** Android 8.0+ (API Level 27 to 37)  
 > **Backend Service:** ASP.NET Core 8 Web API (Containerised Docker microservice deployed on Render)  
-> **Repository:** [PROG7314-2026-Part-2-Group-5](https://github.com/Divitiae-Technology/prog7314-2026-part-2-group-5)
+> **Repository:** [PROG7314-2026-Part-2-Group-5](https://github.com/EMGPMD/prog7314-2026-part-2-group-5)
 
 ---
 
