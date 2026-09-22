@@ -307,8 +307,16 @@ public class FirestoreDataStore : IDataStore
             {
                 try
                 {
+                    // Ensure parent user document exists with fields so Firestore does not show it as a phantom
+                    var userDocRef = _firestoreDb.Collection("users").Document(userId);
+                    await userDocRef.SetAsync(new Dictionary<string, object>
+                    {
+                        ["userId"] = userId,
+                        ["updatedAt"] = FieldValue.ServerTimestamp
+                    }, SetOptions.MergeAll);
+
                     // Path: users/{userId}/notes/{noteId} as specified in Section 06 of Architecture Doc
-                    var docRef = _firestoreDb.Collection("users").Document(userId).Collection("notes").Document(note.NoteId);
+                    var docRef = userDocRef.Collection("notes").Document(note.NoteId);
                     await docRef.SetAsync(new Dictionary<string, object>
                     {
                         ["noteId"] = note.NoteId,
