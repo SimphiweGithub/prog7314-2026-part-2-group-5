@@ -35,7 +35,10 @@ class AppContainer(context: Context) {
     @Volatile
     private var cachedUserId: String = "local"
 
-    val preferencesRepository = PreferencesRepository(appContext)
+    // The API client needs the preferences (Accept-Language) and the
+    // preferences need the API (cloud mirror), so the API is handed over
+    // lazily through a lambda that is only invoked once both exist.
+    val preferencesRepository = PreferencesRepository(appContext, apiProvider = { api })
     val authTokenStore = AuthTokenStore(appContext)
     private val database = PulseSyncDatabase.get(appContext)
 

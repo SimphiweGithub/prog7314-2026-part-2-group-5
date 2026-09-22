@@ -16,7 +16,6 @@ import com.divitiae.pulsesync.ui.auth.SignUpRoute
 import com.divitiae.pulsesync.ui.components.BottomDestination
 import com.divitiae.pulsesync.ui.feed.FeedRoute
 import com.divitiae.pulsesync.ui.settings.SettingsScreen
-import com.divitiae.pulsesync.ui.settings.ThemeMode
 
 /** Route names for the navigation graph. */
 object Routes {
@@ -37,11 +36,12 @@ object Routes {
  * Navigation out of the auth screens is now gated on the ViewModel: the
  * routes call `onSignedIn` only after `/api/v1/auth/google` returns a JWT (or
  * when one is already persisted). Vault remains outside scope.
+ *
+ * Theme is no longer threaded through here: Settings writes it to DataStore
+ * and the app root observes that flow, so every screen re-themes at once.
  */
 @Composable
 fun PulseSyncNavHost(
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.SIGN_IN,
@@ -105,8 +105,6 @@ fun PulseSyncNavHost(
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(
-                themeMode = themeMode,
-                onThemeModeChange = onThemeModeChange,
                 onNavigate = { destination ->
                     when (destination) {
                         BottomDestination.FEED -> switchTab(Routes.FEED)

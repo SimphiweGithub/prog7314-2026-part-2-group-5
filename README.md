@@ -212,7 +212,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 │  • Android SDK CLI & CMake           │  │  • Docker multi-stage build      │
 │  • Step 1: Compile Kotlin + KSP      │  │  • ASP.NET Core 8 Web API Linux  │
 │  • Step 2: Execute JUnit Test Suite  │  │  • Automated SSL / TLS 1.3       │
-│    (.\gradlew.bat test - 47 tests)   │  │  • Zero-downtime rolling restart │
+│    (.\gradlew.bat test - 57 tests)   │  │  • Zero-downtime rolling restart │
 │  • Step 3: Compile Debug APK         │  │  • Health probe verification     │
 │    (.\gradlew.bat assembleDebug)     │  │  • Base URL live:                │
 │  • Artifact Upload: debug.apk        │  │    https://pulsesync-api.        │
@@ -223,7 +223,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 ### 4.1 Continuous Integration (GitHub Actions)
 - **Triggers:** Automated validation fires on all pull requests and direct pushes to `main`.
 - **Validation Gates:**
-  1. **Unit Test Execution:** Runs all 47 test cases across input validation, DTO deserialization, and coroutine ViewModel state tests (`.\gradlew.bat test`).
+  1. **Unit Test Execution:** Runs all 57 test cases across input validation, DTO deserialization, and coroutine ViewModel state tests (`.\gradlew.bat test`).
   2. **Assembly & Linting:** Validates KSP Room schema generation and compiles the Android package (`.\gradlew.bat assembleDebug`).
   3. **Build Artifacts:** Packages and archives unsigned debug APK artifacts for integration testing.
 
@@ -406,10 +406,11 @@ sequenceDiagram
 A comprehensive test suite was implemented in `app/src/test/java/com/divitiae/pulsesync/` executing directly on the JVM without requiring slow Android emulators or instrumentation overhead.
 
 ```
-Total tests: 47 | Failures: 0 | Skipped: 0 | Success rate: 100%
+Total tests: 57 | Failures: 0 | Skipped: 0 | Success rate: 100%
   ├── InputValidationTest: 10 passed (100%)
   ├── DtoMapperTest:       11 passed (100%)
   ├── ViewModelStateTest:  25 passed (100%)
+  ├── SettingsViewModelTest: 10 passed (100%)
   └── SmokeTest:            1 passed (100%)
 ```
 
@@ -449,6 +450,13 @@ Location: [ViewModelStateTest.kt](app/src/test/java/com/divitiae/pulsesync/ViewM
   - Manual pull-to-refresh failure updating `refreshError` to `UiState.Error(retryable = true)`.
   - `consumeRefreshError()` resetting error state to `null`.
   - Category selection and in-memory dual-mode summary toggle operations.
+
+### 6.4 SettingsViewModel Persistence Tests
+Location: [SettingsViewModelTest.kt](app/src/test/java/com/divitiae/pulsesync/SettingsViewModelTest.kt)
+- **State Mapping:** DataStore preferences, tracked keywords, topic subscriptions and offline slots combine into one `UiState<SettingsUiState>`.
+- **Persistence:** every preference control writes through `PreferencesRepository` and the change is mirrored to `PUT /api/v1/preferences`; a burst of toggles is debounced into a single cloud push.
+- **Cloud Failure Boundary:** a failed mirror keeps the on-device copy and surfaces a `SyncEvent.Failed` instead of an exception.
+- **Keywords & Topics:** blank and duplicate keywords are rejected before any write, valid keywords are normalised and persisted, removals resolve the stored id, and topic toggles flip the category subscription.
 
 ---
 
@@ -718,7 +726,7 @@ All method and architecture-level attributions across the Android client, testin
 ```powershell
 .\gradlew.bat test
 ```
-Executes all 47 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
+Executes all 57 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ### 9.3 Compiling Debug APK
 ```powershell

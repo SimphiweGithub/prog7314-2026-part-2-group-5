@@ -32,9 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,7 +44,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.divitiae.pulsesync.R
+import com.divitiae.pulsesync.ui.common.UiStateBoundary
+import com.divitiae.pulsesync.ui.common.toMessageRes
 import com.divitiae.pulsesync.ui.components.BottomDestination
 import com.divitiae.pulsesync.ui.components.PulseSyncBottomBar
 import com.divitiae.pulsesync.ui.components.PulseSyncDimens
@@ -53,63 +57,81 @@ import com.divitiae.pulsesync.ui.theme.PulseSyncTheme
 /**
  * Preferences & Settings (Figma 9:35, dark 29:295).
  *
- * Prototype state lives here; the theme choice is hoisted through
- * [onThemeModeChange] so the whole app re-themes immediately. Member 4's
- * SettingsViewModel replaces the local state without touching [SettingsContent].
+ * The stateful host: observes [SettingsViewModel.uiState] (DataStore + Room)
+ * and forwards every control to the ViewModel, which persists it on-device
+ * and mirrors preferences to the cloud. Only the keyword draft and its error
+ * highlight are screen-local, because they are transient input state.
+ * [SettingsContent] below is Member 2's stateless layout, unchanged.
  */
 @Composable
 fun SettingsScreen(
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
     onNavigate: (BottomDestination) -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
-    var state by remember { mutableStateOf(SettingsSampleData.initialState().copy(themeMode = themeMode)) }
+    val state by viewModel.uiState.collectAsState()
+    val syncEvent by viewModel.syncEvent.collectAsState()
     var keywordDraft by rememberSaveable { mutableStateOf("") }
     var keywordError by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
-    SettingsContent(
-        state = state.copy(themeMode = themeMode),
-        keywordDraft = keywordDraft,
-        keywordError = keywordError,
-        onKeywordDraftChange = {
-            keywordDraft = it
-            keywordError = false // Clear the highlight as soon as the user edits.
-        },
-        onAddKeyword = {
-            when (val result = KeywordValidation.validate(keywordDraft, state.keywords)) {
-                is KeywordValidation.Result.Valid -> {
-                    state = state.copy(keywords = state.keywords + result.keyword)
-                    keywordDraft = ""
-                    keywordError = false
-                }
-                KeywordValidation.Result.Blank -> {
-                    keywordError = true
-                    // Adapted from: Android Developers (2026) Toasts overview. https://developer.android.com/guide/topics/ui/notifiers/toasts
-                    Toast.makeText(context, R.string.settings_keyword_blank_error, Toast.LENGTH_SHORT).show()
-                }
-                KeywordValidation.Result.Duplicate -> {
-                    // Keep the draft so the user can see what was rejected.
-                    keywordError = true
-                    Toast.makeText(context, R.string.settings_keyword_duplicate_error, Toast.LENGTH_SHORT).show()
-                }
+    // Cloud mirror outcome: the device copy is already saved, so a failure is
+    // only informational. Success stays quiet (it is logged by the ViewModel).
+    val syncFailedTemplate = stringResource(R.string.settings_cloud_sync_failed)
+    val syncFailedDetail = (syncEvent as? SettingsViewModel.SyncEvent.Failed)
+        ?.let { stringResource(it.error.toMessageRes()) }
+    LaunchedEffect(syncEvent) {
+        when (syncEvent) {
+            is SettingsViewModel.SyncEvent.Failed -> {
+                Toast.makeText(context, syncFailedTemplate.format(syncFailedDetail ?: ""), Toast.LENGTH_SHORT).show()
+                viewModel.consumeSyncEvent()
             }
-        },
-        onRemoveKeyword = { keyword -> state = state.copy(keywords = state.keywords - keyword) },
-        onToggleTopic = { name, enabled ->
-            state = state.copy(topics = state.topics.map { if (it.name == name) it.copy(enabled = enabled) else it })
-        },
-        onDefaultSummaryChange = { state = state.copy(defaultSummaryMode = it) },
-        onLanguageChange = { state = state.copy(language = it) },
-        onBiometricLockChange = { state = state.copy(biometricLock = it) },
-        onFontSizeChange = { state = state.copy(fontSize = it) },
-        onFontTypeChange = { state = state.copy(fontType = it) },
-        onHighContrastChange = { state = state.copy(highContrast = it) },
-        onThemeModeChange = onThemeModeChange,
-        onNavigate = onNavigate,
-        modifier = modifier,
-    )
+            SettingsViewModel.SyncEvent.Synced -> viewModel.consumeSyncEvent()
+            null -> Unit
+        }
+    }
+
+    // DataStore/Room flows do not fail in practice; the boundary is here so a
+    // storage error renders a pane instead of crashing the screen.
+    UiStateBoundary(state = state, onRetry = {}, modifier = modifier) { settings ->
+        SettingsContent(
+            state = settings,
+            keywordDraft = keywordDraft,
+            keywordError = keywordError,
+            onKeywordDraftChange = {
+                keywordDraft = it
+                keywordError = false // Clear the highlight as soon as the user edits.
+            },
+            onAddKeyword = {
+                when (viewModel.addKeyword(keywordDraft)) {
+                    is KeywordValidation.Result.Valid -> {
+                        keywordDraft = ""
+                        keywordError = false
+                    }
+                    KeywordValidation.Result.Blank -> {
+                        keywordError = true
+                        // Adapted from: Android Developers (2026) Toasts overview. https://developer.android.com/guide/topics/ui/notifiers/toasts
+                        Toast.makeText(context, R.string.settings_keyword_blank_error, Toast.LENGTH_SHORT).show()
+                    }
+                    KeywordValidation.Result.Duplicate -> {
+                        // Keep the draft so the user can see what was rejected.
+                        keywordError = true
+                        Toast.makeText(context, R.string.settings_keyword_duplicate_error, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onRemoveKeyword = viewModel::removeKeyword,
+            onToggleTopic = viewModel::toggleTopic,
+            onDefaultSummaryChange = viewModel::setDefaultSummaryMode,
+            onLanguageChange = viewModel::setLanguage,
+            onBiometricLockChange = viewModel::setBiometricLock,
+            onFontSizeChange = viewModel::setFontSize,
+            onFontTypeChange = viewModel::setFontType,
+            onHighContrastChange = viewModel::setHighContrast,
+            onThemeModeChange = viewModel::setThemeMode,
+            onNavigate = onNavigate,
+        )
+    }
 }
 
 @Composable
@@ -287,4 +309,3 @@ private fun SettingsPreview() {
         )
     }
 }
-

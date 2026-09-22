@@ -21,6 +21,7 @@ data class UserPreferences(
     val biometricLock: Boolean = false,
     val themeMode: ThemePref = ThemePref.SYSTEM,
     val fontSize: FontSizePref = FontSizePref.MEDIUM,
+    val fontType: String = "Default",
     val highContrast: Boolean = false,
 ) {
     /** BCP-47-ish tag for the Accept-Language header, derived from [language]. */

@@ -114,6 +114,7 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_system">System</string>
+    <string name="settings_cloud_sync_failed">Saved on this device. Cloud sync failed: %1$s</string>
 
     <!-- Generic error boundary (Member 4) -->
     <string name="common_retry">Retry</string>

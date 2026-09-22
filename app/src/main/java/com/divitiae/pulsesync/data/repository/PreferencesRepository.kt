@@ -1,14 +1,19 @@
 package com.divitiae.pulsesync.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.divitiae.pulsesync.data.domain.AppError
 import com.divitiae.pulsesync.data.domain.FontSizePref
+import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.domain.SummaryModePref
 import com.divitiae.pulsesync.data.domain.ThemePref
 import com.divitiae.pulsesync.data.domain.UserPreferences
+import com.divitiae.pulsesync.data.remote.PulseSyncApi
+import com.divitiae.pulsesync.data.remote.dto.PreferencesDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -16,8 +21,18 @@ import kotlinx.coroutines.runBlocking
 
 private val Context.dataStore by preferencesDataStore(name = "pulsesync_prefs")
 
-/** DataStore-backed user preferences — the single source for settings state. */
-class PreferencesRepository(private val context: Context) {
+/**
+ * DataStore-backed user preferences — the single source for settings state.
+ *
+ * The on-device copy is always written first so Settings works offline; a
+ * change is then mirrored to `PUT /api/v1/preferences` via [pushToCloud].
+ * [apiProvider] is a lambda (rather than the API itself) because the API
+ * client depends on this repository for its Accept-Language header.
+ */
+class PreferencesRepository(
+    private val context: Context,
+    private val apiProvider: () -> PulseSyncApi? = { null },
+) {
 
     private object Keys {
         val summaryMode = stringPreferencesKey("default_summary_mode")
@@ -25,6 +40,7 @@ class PreferencesRepository(private val context: Context) {
         val biometric = booleanPreferencesKey("biometric_lock")
         val theme = stringPreferencesKey("theme_mode")
         val fontSize = stringPreferencesKey("font_size")
+        val fontType = stringPreferencesKey("font_type")
         val highContrast = booleanPreferencesKey("high_contrast")
     }
 
@@ -41,6 +57,7 @@ class PreferencesRepository(private val context: Context) {
             fontSize = p[Keys.fontSize]
                 ?.let { runCatching { FontSizePref.valueOf(it) }.getOrNull() }
                 ?: FontSizePref.MEDIUM,
+            fontType = p[Keys.fontType] ?: "Default",
             highContrast = p[Keys.highContrast] ?: false,
         )
     }
@@ -60,8 +77,39 @@ class PreferencesRepository(private val context: Context) {
     suspend fun setFontSize(size: FontSizePref) =
         edit { it[Keys.fontSize] = size.name }
 
+    suspend fun setFontType(type: String) =
+        edit { it[Keys.fontType] = type }
+
     suspend fun setHighContrast(enabled: Boolean) =
         edit { it[Keys.highContrast] = enabled }
+
+    /**
+     * Mirrors the current on-device preferences to the cloud
+     * (`PUT /api/v1/preferences`). The local copy is already saved by the time
+     * this runs, so a failure here only means the cloud copy is stale; the
+     * caller decides whether to tell the user.
+     */
+    suspend fun pushToCloud(): Result<Unit> {
+        val api = apiProvider()
+            ?: return Result.Failure(AppError.Network("API client not initialised"))
+        val current = preferences.first()
+        Log.d(
+            TAG,
+            "pushToCloud: PUT /preferences (summary=${current.defaultSummaryMode}, " +
+                "language=${current.languageTag}, biometric=${current.biometricLock})",
+        )
+        return when (val result = safeApiCall { api.updatePreferences(current.toDto()) }) {
+            is Result.Success -> {
+                Log.i(TAG, "pushToCloud: preferences synced to cloud")
+                Result.Success(Unit)
+            }
+
+            is Result.Failure -> {
+                Log.w(TAG, "pushToCloud: cloud sync failed, device copy kept: ${result.error}")
+                result
+            }
+        }
+    }
 
     /**
      * Synchronous read of the language tag for the OkHttp interceptor, which
@@ -73,4 +121,15 @@ class PreferencesRepository(private val context: Context) {
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
     }
+
+    companion object {
+        private const val TAG = "PreferencesRepository"
+    }
 }
+
+/** Only the fields the API stores; accessibility settings stay on the device. */
+fun UserPreferences.toDto(): PreferencesDto = PreferencesDto(
+    defaultSummaryMode = defaultSummaryMode.name,
+    language = languageTag,
+    biometricEnabled = biometricLock,
+)
