@@ -12,18 +12,17 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.divitiae.pulsesync.data.domain.ThemePref
 import com.divitiae.pulsesync.ui.navigation.PulseSyncNavHost
-import com.divitiae.pulsesync.ui.settings.ThemeMode
 import com.divitiae.pulsesync.ui.theme.PulseSyncTheme
 
 class MainActivity : ComponentActivity() {
@@ -76,24 +75,23 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * App root. The theme preference from Settings is held here so a change
- * re-themes every screen at once; Member 4 can back it with DataStore.
+ * App root. The theme preference is observed straight from DataStore, so a
+ * change made on the Settings screen re-themes every screen at once and is
+ * still in effect after the process is killed and relaunched.
  */
 @Composable
 fun PulseSyncApp() {
-    var themeMode by rememberSaveable { mutableStateOf(ThemeMode.SYSTEM) }
-    val darkTheme = when (themeMode) {
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    val container = (LocalContext.current.applicationContext as PulseSyncApplication).container
+    // null until DataStore emits its first value; fall back to the system theme meanwhile.
+    val preferences by container.preferencesRepository.preferences.collectAsState(initial = null)
+    val darkTheme = when (preferences?.themeMode) {
+        ThemePref.LIGHT -> false
+        ThemePref.DARK -> true
+        ThemePref.SYSTEM, null -> isSystemInDarkTheme()
     }
     PulseSyncTheme(darkTheme = darkTheme) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            PulseSyncNavHost(
-                themeMode = themeMode,
-                onThemeModeChange = { themeMode = it },
-                modifier = Modifier.fillMaxSize(),
-            )
+            PulseSyncNavHost(modifier = Modifier.fillMaxSize())
         }
     }
 }

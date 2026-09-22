@@ -12,7 +12,7 @@ package com.divitiae.pulsesync.ui.settings
  * pattern in AuthValidation: the UI decides how to surface a rejection, this
  * only decides whether (and why) an entry is rejected.
  */
-internal object KeywordValidation {
+object KeywordValidation {
 
     // Adapted from: JetBrains (n.d.) Sealed classes and interfaces. https://kotlinlang.org/docs/sealed-classes.html
     sealed interface Result {

@@ -2,6 +2,7 @@ package com.divitiae.pulsesync.data.auth
 
 import android.content.Context
 import android.util.Log
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -32,23 +33,36 @@ class AuthTokenStore(
     private object Keys {
         val access = stringPreferencesKey("access_token_enc")
         val refresh = stringPreferencesKey("refresh_token_enc")
+        /** Set when Google/Firebase sign-in succeeded but the API exchange did not (no JWT held). */
+        val offlineSession = booleanPreferencesKey("offline_session")
     }
 
     @Volatile
     var accessToken: String? = null
         private set
 
-    /** Emits true whenever an access token is on disk — drives "already signed in" routing. */
+    /**
+     * True while the user is signed in on the device only: Firebase accepted
+     * them but no PulseSync JWT was obtained. Requests go out without a Bearer
+     * token and the exchange is retried on reconnect. Cleared by [save] and [clear].
+     */
+    @Volatile
+    var isOfflineSession: Boolean = false
+        private set
+
+    /** Emits true whenever a session (online or offline) is on disk — drives "already signed in" routing. */
     val isSignedIn: Flow<Boolean> =
-        context.authDataStore.data.map { prefs -> prefs[Keys.access]?.let(cipher::decrypt) != null }
+        context.authDataStore.data.map { prefs ->
+            prefs[Keys.access]?.let(cipher::decrypt) != null || prefs[Keys.offlineSession] == true
+        }
 
     /** Warm the in-memory cache from disk at startup (called by AppContainer.initialise). */
     suspend fun load() {
         Log.d(TAG, "load: warming in-memory token cache from encrypted storage")
-        accessToken = context.authDataStore.data
-            .map { prefs -> prefs[Keys.access]?.let(cipher::decrypt) }
-            .first()
-        Log.d(TAG, "load complete: hasAccessToken=${accessToken != null}")
+        val prefs = context.authDataStore.data.first()
+        accessToken = prefs[Keys.access]?.let(cipher::decrypt)
+        isOfflineSession = accessToken == null && prefs[Keys.offlineSession] == true
+        Log.d(TAG, "load complete: hasAccessToken=${accessToken != null}, offlineSession=$isOfflineSession")
     }
 
     suspend fun save(access: String, refresh: String) {
@@ -57,10 +71,19 @@ class AuthTokenStore(
         val encAccess = cipher.encrypt(access)
         val encRefresh = cipher.encrypt(refresh)
         accessToken = access
+        isOfflineSession = false
         context.authDataStore.edit {
             it[Keys.access] = encAccess
             it[Keys.refresh] = encRefresh
+            it.remove(Keys.offlineSession)
         }
+    }
+
+    /** Records a device-only session (see [isOfflineSession]); never stores a token. */
+    suspend fun markOfflineSession() {
+        Log.w(TAG, "markOfflineSession: signed in without an API token; requests will be unauthenticated until reconnect")
+        isOfflineSession = true
+        context.authDataStore.edit { it[Keys.offlineSession] = true }
     }
 
     suspend fun refreshToken(): String? {
@@ -73,6 +96,7 @@ class AuthTokenStore(
     suspend fun clear() {
         Log.i(TAG, "clear: removing stored tokens")
         accessToken = null
+        isOfflineSession = false
         context.authDataStore.edit { it.clear() }
     }
 

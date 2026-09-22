@@ -84,6 +84,7 @@ private fun AuthScaffold(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val emailNotAvailable = stringResource(R.string.auth_email_not_available)
+    val sessionExpired = stringResource(R.string.common_error_unauthorized)
     val notConfigured = stringResource(R.string.auth_error_google_not_configured)
     val noIdToken = stringResource(R.string.auth_error_google_no_id_token)
     val googleGeneric = stringResource(R.string.auth_error_google_generic)
@@ -116,11 +117,18 @@ private fun AuthScaffold(
         }
     }
 
-    // Events that are not tied to signInState (e.g. email button pressed).
+    // Events that are not tied to signInState (e.g. email button pressed, session expired).
     LaunchedEffect(event) {
-        if (event is AuthEvent.EmailNotAvailable) {
-            snackbarHostState.showSnackbar(emailNotAvailable)
-            viewModel.consumeEvent()
+        when (event) {
+            AuthEvent.EmailNotAvailable -> {
+                snackbarHostState.showSnackbar(emailNotAvailable)
+                viewModel.consumeEvent()
+            }
+            AuthEvent.SessionExpired -> {
+                snackbarHostState.showSnackbar(sessionExpired)
+                viewModel.consumeEvent()
+            }
+            else -> Unit
         }
     }
 

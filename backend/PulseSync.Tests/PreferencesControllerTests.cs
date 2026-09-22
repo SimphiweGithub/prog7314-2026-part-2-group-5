@@ -23,8 +23,8 @@ public class PreferencesControllerTests
     public PreferencesControllerTests()
     {
         _dataStore = new InMemoryDataStore();
-        _preferencesController = new PreferencesController(_dataStore);
-        _keywordsController = new KeywordsController(_dataStore);
+        _preferencesController = new PreferencesController(_dataStore).SignedInAs("demo-user");
+        _keywordsController = new KeywordsController(_dataStore).SignedInAs("demo-user");
     }
 
     [Fact]

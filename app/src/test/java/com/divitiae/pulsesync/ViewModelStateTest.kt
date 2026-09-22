@@ -2,6 +2,8 @@ package com.divitiae.pulsesync
 
 import com.divitiae.pulsesync.data.auth.AuthRepository
 import com.divitiae.pulsesync.data.auth.AuthTokenStore
+import com.divitiae.pulsesync.data.auth.SessionManager
+import com.divitiae.pulsesync.data.auth.SignIn
 import com.divitiae.pulsesync.data.domain.AppError
 import com.divitiae.pulsesync.data.domain.Result
 import com.divitiae.pulsesync.data.domain.UserProfile
@@ -208,7 +210,7 @@ class ViewModelStateTest {
         val tokenStore: AuthTokenStore = mock()
         whenever(tokenStore.accessToken).thenReturn(null)
 
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()
 
         verify(tokenStore).load()
@@ -223,7 +225,7 @@ class ViewModelStateTest {
         val tokenStore: AuthTokenStore = mock()
         whenever(tokenStore.accessToken).thenReturn("stored.jwt.token")
 
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()
 
         verify(tokenStore).load()
@@ -237,9 +239,9 @@ class ViewModelStateTest {
         val tokenStore: AuthTokenStore = mock()
         whenever(tokenStore.accessToken).thenReturn(null)
         whenever(authRepository.signInWithGoogleIdToken(eq("google-id-token-valid"), anyOrNull()))
-            .thenReturn(Result.Success(sampleUser))
+            .thenReturn(Result.Success(SignIn(sampleUser)))
 
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()
 
         viewModel.onGoogleIdToken("google-id-token-valid")
@@ -262,7 +264,7 @@ class ViewModelStateTest {
         whenever(authRepository.signInWithGoogleIdToken(eq("google-id-token-expired"), anyOrNull()))
             .thenReturn(Result.Failure(AppError.Unauthorized("Invalid or expired ID token")))
 
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()
 
         viewModel.onGoogleIdToken("google-id-token-expired")
@@ -285,7 +287,7 @@ class ViewModelStateTest {
         whenever(authRepository.signInWithGoogleIdToken(eq("google-id-token-net-fail"), anyOrNull()))
             .thenReturn(Result.Failure(AppError.Network("Unable to resolve host")))
 
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()
 
         viewModel.onGoogleIdToken("google-id-token-net-fail")
@@ -303,7 +305,7 @@ class ViewModelStateTest {
     fun authViewModel_onGoogleSignInFailed_noIdToken() = runTest {
         val authRepository: AuthRepository = mock()
         val tokenStore: AuthTokenStore = mock()
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
 
         viewModel.onGoogleSignInFailed(GoogleSignInFailure.NO_ID_TOKEN)
 
@@ -322,7 +324,7 @@ class ViewModelStateTest {
     fun authViewModel_onGoogleSignInFailed_notConfiguredIsNotRetryable() = runTest {
         val authRepository: AuthRepository = mock()
         val tokenStore: AuthTokenStore = mock()
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
 
         viewModel.onGoogleSignInFailed(GoogleSignInFailure.NOT_CONFIGURED)
 
@@ -341,7 +343,7 @@ class ViewModelStateTest {
     fun authViewModel_onGoogleSignInFailed_nullCancellationRemainsIdle() = runTest {
         val authRepository: AuthRepository = mock()
         val tokenStore: AuthTokenStore = mock()
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
 
         viewModel.onGoogleSignInFailed(null)
 
@@ -353,7 +355,7 @@ class ViewModelStateTest {
     fun authViewModel_consumeError_clearsErrorState() = runTest {
         val authRepository: AuthRepository = mock()
         val tokenStore: AuthTokenStore = mock()
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
 
         viewModel.onGoogleSignInFailed(GoogleSignInFailure.API_ERROR)
         assertTrue(viewModel.signInState.value is UiState.Error)
@@ -366,7 +368,7 @@ class ViewModelStateTest {
     fun authViewModel_consumeEvent_clearsEvent() = runTest {
         val authRepository: AuthRepository = mock()
         val tokenStore: AuthTokenStore = mock()
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
 
         viewModel.onEmailSignInRequested()
         assertEquals(AuthEvent.EmailNotAvailable, viewModel.events.value)
@@ -381,7 +383,7 @@ class ViewModelStateTest {
         val tokenStore: AuthTokenStore = mock()
         whenever(tokenStore.accessToken).thenReturn("active_token")
 
-        val viewModel = AuthViewModel(authRepository, tokenStore)
+        val viewModel = AuthViewModel(authRepository, tokenStore, SessionManager(tokenStore, scope = this))
         advanceUntilIdle()
         assertEquals(true, viewModel.hasExistingSession.value)
 

@@ -5,6 +5,8 @@
  * C# Corner
  */
 
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
 using PulseSync.Api.Services;
@@ -76,6 +78,11 @@ public class AuthController : ControllerBase
         ));
     }
 
+    /// <summary>
+    /// Exchanges a refresh token for a new access/refresh pair. The refresh
+    /// token must match the one currently stored for its user; it is rotated on
+    /// every use, so a replayed (old) token is rejected with 401.
+    /// </summary>
     [HttpPost("refresh")]
     public ActionResult<AuthResponseDto> Refresh([FromBody] RefreshRequestDto request)
     {
@@ -84,20 +91,45 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Refresh token is required." });
         }
 
-        // For demo/prototype: locate user with matching refresh token
-        // If not found, return unauthorized
+        var userId = _dataStore.FindUserIdByRefreshToken(request.RefreshToken);
+        if (userId == null)
+        {
+            _logger.LogWarning("Refresh rejected: token is unknown, rotated or revoked");
+            return Unauthorized(new { message = "Refresh token is invalid or has been revoked. Please sign in again." });
+        }
+
+        var email = _dataStore.GetUser(userId)?.Email ?? string.Empty;
+        var accessToken = _tokenService.GenerateAccessToken(userId, email);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+        _dataStore.SaveRefreshToken(userId, refreshToken);
+
+        _logger.LogInformation("Rotated tokens for user {UserId}", userId);
+
         return Ok(new AuthResponseDto(
-            UserId: "refreshed-user",
-            AccessToken: _tokenService.GenerateAccessToken("refreshed-user", "user@pulsesync.ac.za"),
-            RefreshToken: _tokenService.GenerateRefreshToken(),
+            UserId: userId,
+            AccessToken: accessToken,
+            RefreshToken: refreshToken,
             ExpiresIn: 7200,
             IsNewUser: false
         ));
     }
 
+    /// <summary>
+    /// Revokes the caller's refresh token so it can no longer mint access tokens.
+    /// Requires a valid access token; an anonymous call is rejected with 401.
+    /// </summary>
+    [Authorize]
     [HttpPost("logout")]
     public IActionResult Logout()
     {
+        var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? User?.FindFirstValue("userId");
+        if (userId == null)
+        {
+            return Unauthorized(new { message = "The request does not carry an authenticated user identity." });
+        }
+
+        _dataStore.InvalidateRefreshToken(userId);
+        _logger.LogInformation("User {UserId} logged out; refresh token revoked", userId);
         return Ok(new { message = "Logged out successfully." });
     }
 }

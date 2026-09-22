@@ -5,7 +5,6 @@
  * C# Corner
  */
 
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
 using PulseSync.Api.Services;
@@ -14,7 +13,7 @@ namespace PulseSync.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/preferences")]
-public class PreferencesController : ControllerBase
+public class PreferencesController : AuthenticatedControllerBase
 {
     private readonly IDataStore _dataStore;
 
@@ -22,11 +21,6 @@ public class PreferencesController : ControllerBase
     {
         _dataStore = dataStore;
     }
-
-    private string CurrentUserId =>
-        User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-        User?.FindFirstValue("userId") ??
-        "demo-user";
 
     [HttpGet]
     public ActionResult<PreferencesDto> GetPreferences()
@@ -45,7 +39,7 @@ public class PreferencesController : ControllerBase
 
 [ApiController]
 [Route("api/v1/keywords")]
-public class KeywordsController : ControllerBase
+public class KeywordsController : AuthenticatedControllerBase
 {
     private readonly IDataStore _dataStore;
 
@@ -53,11 +47,6 @@ public class KeywordsController : ControllerBase
     {
         _dataStore = dataStore;
     }
-
-    private string CurrentUserId =>
-        User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-        User?.FindFirstValue("userId") ??
-        "demo-user";
 
     [HttpGet]
     public ActionResult<List<KeywordDto>> GetKeywords()

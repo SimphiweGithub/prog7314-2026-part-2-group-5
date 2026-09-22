@@ -18,6 +18,8 @@ public interface IDataStore
     UserDto? GetUser(string userId);
     void SaveRefreshToken(string userId, string refreshToken);
     string? GetRefreshToken(string userId);
+    /// <summary>Resolves the owner of a refresh token, or null when it is unknown or revoked.</summary>
+    string? FindUserIdByRefreshToken(string refreshToken);
     void InvalidateRefreshToken(string userId);
 
     // Preferences
@@ -90,6 +92,18 @@ public class InMemoryDataStore : IDataStore
     {
         _refreshTokens.TryGetValue(userId, out var token);
         return token;
+    }
+
+    public string? FindUserIdByRefreshToken(string refreshToken)
+    {
+        foreach (var pair in _refreshTokens)
+        {
+            if (string.Equals(pair.Value, refreshToken, StringComparison.Ordinal))
+            {
+                return pair.Key;
+            }
+        }
+        return null;
     }
 
     public void InvalidateRefreshToken(string userId)

@@ -114,12 +114,84 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public void Logout_ReturnsOk()
+    public void Refresh_WithEmptyToken_ReturnsBadRequest()
     {
+        var result = _controller.Refresh(new RefreshRequestDto(string.Empty));
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public void Refresh_WithUnknownToken_ReturnsUnauthorized()
+    {
+        var result = _controller.Refresh(new RefreshRequestDto("never-issued"));
+
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public void Refresh_WithStoredToken_RotatesPairForThatUser()
+    {
+        // Arrange: a user who signed in earlier and holds refresh token "rt-1".
+        _dataStore.UpsertUser(new UserDto(UserId: "uid-42", Email: "s42@wits.ac.za", DisplayName: "Student 42"));
+        _dataStore.SaveRefreshToken("uid-42", "rt-1");
+        _tokenServiceMock
+            .Setup(s => s.GenerateAccessToken("uid-42", "s42@wits.ac.za"))
+            .Returns("access-for-uid-42");
+        _tokenServiceMock
+            .Setup(s => s.GenerateRefreshToken())
+            .Returns("rt-2");
+
+        // Act
+        var result = _controller.Refresh(new RefreshRequestDto("rt-1"));
+
+        // Assert: the pair belongs to the token's owner, not a placeholder user.
+        result.Result.Should().BeOfType<OkObjectResult>();
+        var response = (result.Result as OkObjectResult)!.Value as AuthResponseDto;
+        response!.UserId.Should().Be("uid-42");
+        response.AccessToken.Should().Be("access-for-uid-42");
+        response.RefreshToken.Should().Be("rt-2");
+        _dataStore.GetRefreshToken("uid-42").Should().Be("rt-2");
+
+        // Replaying the consumed token must fail.
+        var replay = _controller.Refresh(new RefreshRequestDto("rt-1"));
+        replay.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public void Refresh_AfterLogout_ReturnsUnauthorized()
+    {
+        _dataStore.SaveRefreshToken("uid-7", "rt-7");
+        _controller.SignedInAs("uid-7");
+        _controller.Logout();
+
+        var result = _controller.Refresh(new RefreshRequestDto("rt-7"));
+
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public void Logout_WhenAuthenticated_RevokesRefreshTokenAndReturnsOk()
+    {
+        // Arrange
+        _dataStore.SaveRefreshToken("test_uid_12345", "refresh_to_revoke");
+        _controller.SignedInAs("test_uid_12345");
+
         // Act
         var result = _controller.Logout();
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
+        _dataStore.GetRefreshToken("test_uid_12345").Should().BeNull();
+    }
+
+    [Fact]
+    public void Logout_WithoutIdentity_ReturnsUnauthorized()
+    {
+        // Act
+        var result = _controller.Logout();
+
+        // Assert
+        result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 }

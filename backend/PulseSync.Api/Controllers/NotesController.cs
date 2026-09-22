@@ -5,7 +5,6 @@
  * C# Corner
  */
 
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
 using PulseSync.Api.Services;
@@ -14,7 +13,7 @@ namespace PulseSync.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/notes")]
-public class NotesController : ControllerBase
+public class NotesController : AuthenticatedControllerBase
 {
     private readonly IDataStore _dataStore;
 
@@ -22,11 +21,6 @@ public class NotesController : ControllerBase
     {
         _dataStore = dataStore;
     }
-
-    private string CurrentUserId =>
-        User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-        User?.FindFirstValue("userId") ??
-        "demo-user";
 
     [HttpGet]
     public ActionResult<List<NoteDto>> GetNotes([FromQuery] string? tag = null, [FromQuery] string? q = null)

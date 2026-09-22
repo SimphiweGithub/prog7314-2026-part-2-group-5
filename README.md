@@ -124,6 +124,7 @@ Requests and responses traverse an ordered OkHttp interceptor chain:
 ┌───────────────────────────────┐
 │       AuthInterceptor         │  --> Injects "Authorization: Bearer <JWT>"
 │                               │  --> Injects "Accept-Language: <locale>" (en / zu / af)
+│                               │  <-- HTTP 401 on a request that sent a JWT => SessionManager
 └──────────────┬────────────────┘
                ▼
 ┌───────────────────────────────┐
@@ -201,6 +202,28 @@ All network calls are guarded by `safeApiCall` and `safeApiCallEmpty` ([ApiResul
   - `AppError.Http`: Non-2xx server error code with response body message (marked `retryable = true`).
   - `AppError.Unknown`: Uncaught runtime exceptions (marked `retryable = true`).
 
+### 3.5 Server-Side Authorization & Session Expiry
+Every per-user endpoint on the API (`/notes`, `/preferences`, `/keywords`, `/users/me`, `/downloads`, `/auth/logout`) derives from [AuthenticatedControllerBase.cs](backend/PulseSync.Api/Controllers/AuthenticatedControllerBase.cs), which carries `[Authorize]`. The JWT bearer middleware validates the HMAC-SHA256 signature and expiry of the PulseSync access token before the action runs, and the user id is read from the token's subject claim, so a caller can only ever reach their own data. There is no anonymous fallback user: a missing, expired or tampered token yields **HTTP 401** with a `WWW-Authenticate: Bearer` challenge. The feed endpoints (`/articles`, `/categories`) remain public.
+
+On the client, [SessionManager.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/SessionManager.kt) closes the loop:
+1. `AuthInterceptor` notices a 401 on a request that **did** carry a Bearer token (401s on the `auth/` endpoints, or on requests sent without a token, are ordinary outcomes and are ignored).
+2. `SessionManager` wipes the encrypted token store exactly once, even when several parallel requests fail together, and raises `sessionExpired`.
+3. `PulseSyncNavHost` observes the flag, clears the back stack and lands on Sign In, where `AuthViewModel` queues an `AuthEvent.SessionExpired` so the screen shows "Your session has expired. Please sign in again."
+
+### 3.6 Firebase ID Token Verification & Silent Token Refresh
+**Sign-in (`POST /auth/google`).** [FirebaseAuthService.cs](backend/PulseSync.Api/Services/FirebaseAuthService.cs) verifies the Firebase ID token with the Firebase Admin SDK (`FirebaseAuth.VerifyIdTokenAsync`): the RS256 signature is checked against Google's public keys and the issuer, audience (project id) and expiry are validated. A forged token with plausible claims, a malformed token, or a server without Firebase credentials all yield 401 (fail closed). Credentials come from the same `FIREBASE_CREDENTIALS_JSON` variable Firestore uses.
+
+**Refresh (`POST /auth/refresh`).** The refresh token must match the one stored for its user (`IDataStore.FindUserIdByRefreshToken`). Every use rotates the pair, so a replayed token and a token revoked by logout are both rejected with 401. Firestore keeps a SHA-256 hash of the current refresh token per user in the `refreshTokens` collection, so sessions survive a Render redeploy.
+
+**Client.** Access tokens expire after two hours. [TokenAuthenticator.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/TokenAuthenticator.kt) is registered as the OkHttp `Authenticator`: on a 401 for a request that carried a Bearer token it calls `/auth/refresh` through a token-less client, stores the new pair in the encrypted `AuthTokenStore`, and replays the request once. Concurrent 401s are serialised with a lock, so only the first caller refreshes and the rest reuse the rotated token. Only when refresh itself fails does the 401 reach `AuthInterceptor` and the session-expiry flow in 3.5.
+
+### 3.7 Offline Sign-In (Visible Fallback)
+Google and Firebase can accept a user while the PulseSync API is unreachable (no connectivity, Render cold start, 5xx). [AuthRepository.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/AuthRepository.kt) handles that case explicitly instead of masking it:
+- The exchange failure is classified. **Outages** (`AppError.Network`, `Http 404/5xx`, `Unknown`) trigger the fallback; a credential the API **rejected** (`Unauthorized`, other 4xx) is returned as a real sign-in failure.
+- On an outage the app enters an **offline session**: `AuthTokenStore.markOfflineSession()` records the state, no token is stored (the Firebase ID token is never used as an API token), and the profile is cached in Room so the user still lands on the Feed with cached content.
+- The result is `SignIn(profile, serverError)`; `AuthViewModel` raises `AuthEvent.SignedInOffline`, and `PulseSyncNavHost` shows an app-level Snackbar ("Signed in offline: the PulseSync server could not be reached...") that survives the navigation away from Sign In. The fallback is logged at warning level.
+- `AppContainer` watches `NetworkMonitor.isOnline`; when the device is back online `completePendingExchange()` asks Firebase for a fresh ID token, retries `/auth/google`, and silently upgrades the session to a real JWT.
+
 ---
 
 ## 4. CI/CD Pipeline & Cloud Deployment Strategy
@@ -220,7 +243,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 │  • Android SDK CLI & CMake           │  │  • Docker multi-stage build      │
 │  • Step 1: Compile Kotlin + KSP      │  │  • ASP.NET Core 8 Web API Linux  │
 │  • Step 2: Execute JUnit Test Suite  │  │  • Automated SSL / TLS 1.3       │
-│    (.\gradlew.bat test - 47 tests)   │  │  • Zero-downtime rolling restart │
+│    (.\gradlew.bat test - 77 tests)   │  │  • Zero-downtime rolling restart │
 │  • Step 3: Compile Debug APK         │  │  • Health probe verification     │
 │    (.\gradlew.bat assembleDebug)     │  │  • Base URL live:                │
 │  • Artifact Upload: debug.apk        │  │    https://pulsesync-api.        │
@@ -231,7 +254,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 ### 4.1 Continuous Integration (GitHub Actions)
 - **Triggers:** Automated validation fires on all pull requests and direct pushes to `main`.
 - **Validation Gates:**
-  1. **Unit Test Execution:** Runs all 47 test cases across input validation, DTO deserialization, and coroutine ViewModel state tests (`.\gradlew.bat test`).
+  1. **Unit Test Execution:** Runs all 77 test cases across input validation, DTO deserialization, coroutine ViewModel state, session-expiry, token-refresh and offline sign-in tests (`.\gradlew.bat test`).
   2. **Assembly & Linting:** Validates KSP Room schema generation and compiles the Android package (`.\gradlew.bat assembleDebug`).
   3. **Build Artifacts:** Packages and archives unsigned debug APK artifacts for integration testing.
 
@@ -421,10 +444,14 @@ sequenceDiagram
 A comprehensive test suite was implemented in `app/src/test/java/com/divitiae/pulsesync/` executing directly on the JVM without requiring slow Android emulators or instrumentation overhead.
 
 ```
-Total tests: 47 | Failures: 0 | Skipped: 0 | Success rate: 100%
+Total tests: 77 | Failures: 0 | Skipped: 0 | Success rate: 100%
   ├── InputValidationTest: 10 passed (100%)
   ├── DtoMapperTest:       11 passed (100%)
   ├── ViewModelStateTest:  25 passed (100%)
+  ├── SettingsViewModelTest: 10 passed (100%)
+  ├── SessionExpiryTest:     7 passed (100%)
+  ├── TokenAuthenticatorTest: 5 passed (100%)
+  ├── OfflineSignInTest:     8 passed (100%)
   └── SmokeTest:            1 passed (100%)
 ```
 
@@ -464,6 +491,41 @@ Location: [ViewModelStateTest.kt](app/src/test/java/com/divitiae/pulsesync/ViewM
   - Manual pull-to-refresh failure updating `refreshError` to `UiState.Error(retryable = true)`.
   - `consumeRefreshError()` resetting error state to `null`.
   - Category selection and in-memory dual-mode summary toggle operations.
+
+### 6.4 SettingsViewModel Persistence Tests
+Location: [SettingsViewModelTest.kt](app/src/test/java/com/divitiae/pulsesync/SettingsViewModelTest.kt)
+- **State Mapping:** DataStore preferences, tracked keywords, topic subscriptions and offline slots combine into one `UiState<SettingsUiState>`.
+- **Persistence:** every preference control writes through `PreferencesRepository` and the change is mirrored to `PUT /api/v1/preferences`; a burst of toggles is debounced into a single cloud push.
+- **Cloud Failure Boundary:** a failed mirror keeps the on-device copy and surfaces a `SyncEvent.Failed` instead of an exception.
+- **Keywords & Topics:** blank and duplicate keywords are rejected before any write, valid keywords are normalised and persisted, removals resolve the stored id, and topic toggles flip the category subscription.
+
+### 6.5 Session Expiry Tests
+Location: [SessionExpiryTest.kt](app/src/test/java/com/divitiae/pulsesync/SessionExpiryTest.kt)
+- **Interceptor (MockWebServer):** a 401 on a request that sent a Bearer token triggers the expiry callback exactly once; a 401 without a token, a 401 on an `auth/` endpoint, and a 200 with a token leave the session alone.
+- **SessionManager:** three concurrent 401s clear the token store once and raise `sessionExpired`; with no stored token nothing happens; `acknowledgeExpiry()` resets the flag.
+- **AuthViewModel:** an expired session drops `hasExistingSession`, resets the sign-in state, and `onSessionExpiryHandled()` queues `AuthEvent.SessionExpired` for the Sign In Snackbar.
+
+### 6.6 Backend Authorization Tests (xUnit)
+Location: [AuthorizationTests.cs](backend/PulseSync.Tests/AuthorizationTests.cs)
+- Drives the real ASP.NET Core pipeline through `WebApplicationFactory<Program>` with Firestore swapped for `InMemoryDataStore`.
+- Asserts 401 + `WWW-Authenticate: Bearer` for every per-user endpoint without a token, 401 for a token whose signature was tampered with, 200 for the public feed endpoints, that notes created by one user are invisible to another, and that logout requires a token.
+- Existing controller tests attach a `ClaimsPrincipal` via [TestPrincipal.cs](backend/PulseSync.Tests/TestPrincipal.cs), mirroring what the JWT middleware sets after validation.
+
+### 6.7 Token Refresh Tests
+Location: [TokenAuthenticatorTest.kt](app/src/test/java/com/divitiae/pulsesync/TokenAuthenticatorTest.kt) (MockWebServer, real OkHttp pipeline)
+- An expired access token is refreshed and the request replayed with the new Bearer; the new pair is saved and the session is **not** expired.
+- A rejected refresh lets the 401 through and expires the session exactly once, without saving anything.
+- A request that carried no token is never refreshed; a token already rotated by another request is reused without a second refresh; a replay that is rejected again gives up after one retry.
+
+### 6.8 Backend Refresh & Firebase Verification Tests (xUnit)
+- [AuthControllerTests.cs](backend/PulseSync.Tests/AuthControllerTests.cs): empty refresh token → 400; unknown token → 401; a stored token rotates the pair for **its** user and the consumed token is rejected on replay; refresh after logout → 401.
+- [FirebaseAuthServiceTests.cs](backend/PulseSync.Tests/FirebaseAuthServiceTests.cs): a blank token, a malformed token, and a self-signed token carrying Firebase-shaped claims are all rejected; the last case is what the previous claim-decoding implementation would have accepted.
+
+### 6.9 Offline Sign-In Tests
+Location: [OfflineSignInTest.kt](app/src/test/java/com/divitiae/pulsesync/OfflineSignInTest.kt) (Firebase Auth and the Retrofit API are mocked; `Tasks.forResult` stands in for the Firebase task pipeline)
+- **Classification:** network errors, HTTP 404/5xx and unknown failures count as outages; 401 and other 4xx do not.
+- **Repository:** an API outage yields `SignIn(isOffline = true)`, marks the offline session, caches the profile and never saves a token; a 401 from the API fails the sign-in outright; a successful exchange stores the JWT pair and is online; `completePendingExchange()` upgrades an offline session on reconnect and is a no-op for online sessions.
+- **ViewModel:** an offline result still transitions to `Success` (the user enters the app) and raises `AuthEvent.SignedInOffline`; an offline session on disk counts as an existing session at startup.
 
 ---
 
@@ -720,6 +782,51 @@ All method and architecture-level attributions across the Android client, testin
     - *URL:* https://www.c-sharpcorner.com/article/dockerizing-an-asp-net-core-web-api/
     - *Author:* C# Corner & Render
 
+44. **Code Attribution No 44** &mdash; [AuthenticatedControllerBase.cs](backend/PulseSync.Api/Controllers/AuthenticatedControllerBase.cs)
+    - *This method was taken from:* "Simple authorization in ASP.NET Core"
+    - *URL:* https://learn.microsoft.com/en-us/aspnet/core/security/authorization/simple
+    - *Author:* Microsoft Learn
+
+45. **Code Attribution No 45** &mdash; [TestPrincipal.cs](backend/PulseSync.Tests/TestPrincipal.cs)
+    - *This method was taken from:* "Unit test controllers in ASP.NET Core"
+    - *URL:* https://learn.microsoft.com/en-us/aspnet/core/mvc/controllers/testing
+    - *Author:* Microsoft Learn
+
+46. **Code Attribution No 46** &mdash; [AuthorizationTests.cs](backend/PulseSync.Tests/AuthorizationTests.cs)
+    - *This method was taken from:* "Integration tests in ASP.NET Core"
+    - *URL:* https://learn.microsoft.com/en-us/aspnet/core/test/integration-tests
+    - *Author:* Microsoft Learn
+
+47. **Code Attribution No 47** &mdash; [SessionManager.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/SessionManager.kt)
+    - *This method was taken from:* "Handle 401 responses with OkHttp interceptors"
+    - *URL:* https://square.github.io/okhttp/features/interceptors/
+    - *Author:* Square, Inc.
+
+48. **Code Attribution No 48** &mdash; [SessionExpiryTest.kt](app/src/test/java/com/divitiae/pulsesync/SessionExpiryTest.kt)
+    - *This method was taken from:* "MockWebServer: scriptable web server for testing HTTP clients"
+    - *URL:* https://github.com/square/okhttp/tree/master/mockwebserver
+    - *Author:* Square, Inc.
+
+49. **Code Attribution No 49** &mdash; [FirebaseAuthServiceTests.cs](backend/PulseSync.Tests/FirebaseAuthServiceTests.cs)
+    - *This method was taken from:* "Verify ID Tokens using Firebase Admin SDK"
+    - *URL:* https://firebase.google.com/docs/auth/admin/verify-id-tokens
+    - *Author:* Google Firebase
+
+50. **Code Attribution No 50** &mdash; [TokenAuthenticator.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/TokenAuthenticator.kt)
+    - *This method was taken from:* "OkHttp Authenticator: Handling authentication challenges and token refresh"
+    - *URL:* https://square.github.io/okhttp/recipes/#handling-authentication-kt-java
+    - *Author:* Square, Inc.
+
+51. **Code Attribution No 51** &mdash; [TokenAuthenticatorTest.kt](app/src/test/java/com/divitiae/pulsesync/TokenAuthenticatorTest.kt)
+    - *This method was taken from:* "MockWebServer: scriptable web server for testing HTTP clients"
+    - *URL:* https://github.com/square/okhttp/tree/master/mockwebserver
+    - *Author:* Square, Inc.
+
+52. **Code Attribution No 52** &mdash; [OfflineSignInTest.kt](app/src/test/java/com/divitiae/pulsesync/OfflineSignInTest.kt)
+    - *This method was taken from:* "Testing ViewModels with StateFlow and runTest"
+    - *URL:* https://developer.android.com/topic/architecture/ui-layer/state-production#testing
+    - *Author:* Android Developers
+
 ---
 
 ## 9. Build & Verification Instructions
@@ -733,9 +840,15 @@ All method and architecture-level attributions across the Android client, testin
 ```powershell
 .\gradlew.bat test
 ```
-Executes all 47 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
+Executes all 77 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, `SessionExpiryTest`, `TokenAuthenticatorTest`, `OfflineSignInTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
 
-### 9.3 Compiling Debug APK
+### 9.3 Running Backend Tests
+```powershell
+dotnet test backend/PulseSync.Tests/PulseSync.Tests.csproj
+```
+Executes all 35 xUnit tests (controller unit tests, the HTTP-level authorization suite, refresh-token rotation and Firebase ID token verification). Requires the .NET 8 SDK; on a machine that only has a newer runtime installed, prefix the command with `$env:DOTNET_ROLL_FORWARD='Major';`.
+
+### 9.4 Compiling Debug APK
 ```powershell
 .\gradlew.bat assembleDebug
 ```

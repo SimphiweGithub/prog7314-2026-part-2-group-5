@@ -22,7 +22,7 @@ public class NotesControllerTests
     public NotesControllerTests()
     {
         _dataStore = new InMemoryDataStore();
-        _controller = new NotesController(_dataStore);
+        _controller = new NotesController(_dataStore).SignedInAs("demo-user");
     }
 
     [Fact]

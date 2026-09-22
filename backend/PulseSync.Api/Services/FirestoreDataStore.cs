@@ -137,13 +137,114 @@ public class FirestoreDataStore : IDataStore
         return result;
     }
 
-    public UserDto? GetUser(string userId) => _fallbackCache.GetUser(userId);
+    public UserDto? GetUser(string userId)
+    {
+        var cached = _fallbackCache.GetUser(userId);
+        if (cached != null || _firestoreDb == null) return cached;
 
-    public void SaveRefreshToken(string userId, string refreshToken) => _fallbackCache.SaveRefreshToken(userId, refreshToken);
+        // Read-through after a restart: the in-memory cache is empty but the
+        // profile was persisted by UpsertUser on the previous run.
+        try
+        {
+            var snapshot = _firestoreDb.Collection("users").Document(userId).GetSnapshotAsync().GetAwaiter().GetResult();
+            if (!snapshot.Exists) return null;
+
+            var user = new UserDto(
+                UserId: userId,
+                Email: snapshot.GetValue<string>("email"),
+                DisplayName: snapshot.GetValue<string>("displayName"),
+                PhotoUrl: snapshot.ContainsField("photoUrl") ? NullIfEmpty(snapshot.GetValue<string>("photoUrl")) : null,
+                PreferredLanguage: snapshot.ContainsField("preferredLanguage") ? snapshot.GetValue<string>("preferredLanguage") : "en",
+                BiometricEnabled: snapshot.ContainsField("biometricEnabled") && snapshot.GetValue<bool>("biometricEnabled")
+            );
+            _fallbackCache.UpsertUser(user);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read user '{UserId}' from Firestore.", userId);
+            return null;
+        }
+    }
+
+    private static string? NullIfEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
+
+    // Refresh tokens are stored by SHA-256 hash only, so a Firestore leak does
+    // not hand out usable credentials. The cache keeps the raw token for the
+    // lifetime of the process; Firestore lets a session survive a redeploy.
+    private static string HashToken(string token) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
+
+    public void SaveRefreshToken(string userId, string refreshToken)
+    {
+        var previous = _fallbackCache.GetRefreshToken(userId);
+        _fallbackCache.SaveRefreshToken(userId, refreshToken);
+
+        if (_firestoreDb == null) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var tokens = _firestoreDb.Collection("refreshTokens");
+                if (previous != null)
+                {
+                    await tokens.Document(HashToken(previous)).DeleteAsync();
+                }
+                await tokens.Document(HashToken(refreshToken)).SetAsync(new Dictionary<string, object>
+                {
+                    ["userId"] = userId,
+                    ["issuedAt"] = FieldValue.ServerTimestamp
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist refresh token for '{UserId}' to Firestore.", userId);
+            }
+        });
+    }
 
     public string? GetRefreshToken(string userId) => _fallbackCache.GetRefreshToken(userId);
 
-    public void InvalidateRefreshToken(string userId) => _fallbackCache.InvalidateRefreshToken(userId);
+    public string? FindUserIdByRefreshToken(string refreshToken)
+    {
+        var cached = _fallbackCache.FindUserIdByRefreshToken(refreshToken);
+        if (cached != null || _firestoreDb == null) return cached;
+
+        try
+        {
+            var snapshot = _firestoreDb.Collection("refreshTokens").Document(HashToken(refreshToken))
+                .GetSnapshotAsync().GetAwaiter().GetResult();
+            if (!snapshot.Exists) return null;
+
+            var userId = snapshot.GetValue<string>("userId");
+            _fallbackCache.SaveRefreshToken(userId, refreshToken);
+            return userId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to look up refresh token in Firestore.");
+            return null;
+        }
+    }
+
+    public void InvalidateRefreshToken(string userId)
+    {
+        var current = _fallbackCache.GetRefreshToken(userId);
+        _fallbackCache.InvalidateRefreshToken(userId);
+
+        if (_firestoreDb == null || current == null) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _firestoreDb.Collection("refreshTokens").Document(HashToken(current)).DeleteAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to revoke refresh token for '{UserId}' in Firestore.", userId);
+            }
+        });
+    }
 
     public PreferencesDto GetPreferences(string userId) => _fallbackCache.GetPreferences(userId);
 

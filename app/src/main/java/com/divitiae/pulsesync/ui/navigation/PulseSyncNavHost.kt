@@ -1,7 +1,21 @@
 package com.divitiae.pulsesync.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.divitiae.pulsesync.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,13 +24,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.divitiae.pulsesync.ui.article.ArticleDetailScreen
+import com.divitiae.pulsesync.ui.auth.AuthEvent
 import com.divitiae.pulsesync.ui.auth.AuthViewModel
 import com.divitiae.pulsesync.ui.auth.SignInRoute
 import com.divitiae.pulsesync.ui.auth.SignUpRoute
 import com.divitiae.pulsesync.ui.components.BottomDestination
 import com.divitiae.pulsesync.ui.feed.FeedRoute
 import com.divitiae.pulsesync.ui.settings.SettingsScreen
-import com.divitiae.pulsesync.ui.settings.ThemeMode
 
 /** Route names for the navigation graph. */
 object Routes {
@@ -37,11 +51,12 @@ object Routes {
  * Navigation out of the auth screens is now gated on the ViewModel: the
  * routes call `onSignedIn` only after `/api/v1/auth/google` returns a JWT (or
  * when one is already persisted). Vault remains outside scope.
+ *
+ * Theme is no longer threaded through here: Settings writes it to DataStore
+ * and the app root observes that flow, so every screen re-themes at once.
  */
 @Composable
 fun PulseSyncNavHost(
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.SIGN_IN,
@@ -65,11 +80,37 @@ fun PulseSyncNavHost(
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
-    ) {
+    // The API rejected the stored token (HTTP 401): drop the whole back stack
+    // and land on Sign In, which then shows the "session expired" notice.
+    val sessionExpired by authViewModel.sessionExpired.collectAsState()
+    LaunchedEffect(sessionExpired) {
+        if (sessionExpired) {
+            navController.navigate(Routes.SIGN_IN) {
+                popUpTo(navController.graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
+            authViewModel.onSessionExpiryHandled()
+        }
+    }
+
+    // Shown above whichever screen is current, because sign-in immediately
+    // navigates away from the auth screens and would take their Snackbar with it.
+    val snackbarHostState = remember { SnackbarHostState() }
+    val authEvent by authViewModel.events.collectAsState()
+    val signedInOffline = stringResource(R.string.auth_signed_in_offline)
+    LaunchedEffect(authEvent) {
+        if (authEvent is AuthEvent.SignedInOffline) {
+            authViewModel.consumeEvent()
+            snackbarHostState.showSnackbar(signedInOffline, duration = SnackbarDuration.Long)
+        }
+    }
+
+    Box(modifier = modifier) {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         composable(Routes.SIGN_IN) {
             SignInRoute(
                 viewModel = authViewModel,
@@ -105,8 +146,6 @@ fun PulseSyncNavHost(
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(
-                themeMode = themeMode,
-                onThemeModeChange = onThemeModeChange,
                 onNavigate = { destination ->
                     when (destination) {
                         BottomDestination.FEED -> switchTab(Routes.FEED)
@@ -132,5 +171,13 @@ fun PulseSyncNavHost(
                 )
             }
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
+        )
     }
 }
