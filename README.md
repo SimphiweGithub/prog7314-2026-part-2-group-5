@@ -21,7 +21,10 @@
 9. [Build & Verification Instructions](#9-build--verification-instructions)
 
 ---
+## Demonstration Video
+*Direct link:* [Watch the PulseSync Native Android Prototype Demonstration](http...)
 
+---
 ## 1. Application Scope & System Objectives
 
 ### 1.1 Socio-Technical Context & Problem Statement
@@ -43,6 +46,11 @@ South African tertiary students face acute structural friction in accessing time
 | **Multi-Lingual Localization - POE** | Custom BCP-47 language tag negotiation (`en`, `zu`, `af`) via Retrofit HTTP headers. | Native support for South African official languages: English, isiZulu, and Afrikaans. |
 | **Google SSO & Android Keystore** | OpenID Connect token exchange with Firebase Auth; AES-256-GCM JWT encryption via Android Keystore. | Frictionless single-sign-on without insecure local password persistence. |
 
+## Prototype Screen Flows
+
+| Sign-In (SSO) | Feed & AI Summaries | Research Vault (FTS4) | User Settings |
+| :---: | :---: | :---: | :---: |
+| <img src="screenshots/Signin.png" width="220" /> | <img src="screenshots/Feed.png" width="220" /> | <img src="screenshots/Vault.png" width="220" /> | <img src="screenshots/Settings.png" width="220" /> |
 ---
 
 ## 2. MVVM Architectural Design & Component Model
@@ -231,6 +239,13 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 - **Containerization:** The ASP.NET Core 8 Web API backend is packaged using a multi-stage `Dockerfile` running on lightweight Alpine Linux.
 - **Continuous Deployment:** Merges to the `main` branch trigger an immediate webhook deploy on Render.
 - **Live Endpoint:** `https://pulsesync-api.onrender.com/api/v1/`
+
+### 4.3 Automated Workflow Execution Evidence
+The continuous integration pipeline validates compilation, KSP processing, and JVM unit test runs on remote pushes:
+
+<p align="center">
+  <img src="screenshots/CI%20Run.png" alt="GitHub Actions CI Run Pipeline" width="850" />
+</p>
 
 ---
 
