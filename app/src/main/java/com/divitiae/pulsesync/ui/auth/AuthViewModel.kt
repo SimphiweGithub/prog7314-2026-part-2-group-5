@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.divitiae.pulsesync.data.auth.AuthRepository
 import com.divitiae.pulsesync.data.auth.AuthTokenStore
+import com.divitiae.pulsesync.data.auth.SessionManager
 import com.divitiae.pulsesync.data.domain.AppError
 import com.divitiae.pulsesync.data.domain.UserProfile
 import com.divitiae.pulsesync.ui.common.UiState
@@ -38,6 +39,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 class AuthViewModel(
     private val authRepository: AuthRepository,
     private val tokenStore: AuthTokenStore,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     /** null = idle (nothing attempted yet, or a previous error was dismissed). */
@@ -52,6 +54,12 @@ class AuthViewModel(
     private val _events = MutableStateFlow<AuthEvent?>(null)
     val events: StateFlow<AuthEvent?> = _events.asStateFlow()
 
+    /**
+     * True while the API has rejected the stored token and the UI has not yet
+     * routed back to Sign In. The NavHost observes this; see [onSessionExpiryHandled].
+     */
+    val sessionExpired: StateFlow<Boolean> = sessionManager.sessionExpired
+
     init {
         Log.d(TAG, "AuthViewModel initialized")
         viewModelScope.launch {
@@ -60,6 +68,21 @@ class AuthViewModel(
             tokenStore.load()
             _hasExistingSession.value = tokenStore.accessToken != null
         }
+        viewModelScope.launch {
+            sessionManager.sessionExpired.collect { expired ->
+                if (expired) {
+                    Log.w(TAG, "Stored session rejected by the API; returning to Sign In")
+                    _hasExistingSession.value = false
+                    _signInState.value = null
+                }
+            }
+        }
+    }
+
+    /** The NavHost has moved to Sign In: reset the flag and queue the "session expired" notice. */
+    fun onSessionExpiryHandled() {
+        sessionManager.acknowledgeExpiry()
+        _events.value = AuthEvent.SessionExpired
     }
 
     /** Step 2: the Google Sign-In intent returned an ID token. */
@@ -137,7 +160,7 @@ class AuthViewModel(
 
         val Factory: ViewModelProvider.Factory =
             com.divitiae.pulsesync.ui.viewmodel.containerViewModelFactory { container ->
-                AuthViewModel(container.authRepository, container.authTokenStore)
+                AuthViewModel(container.authRepository, container.authTokenStore, container.sessionManager)
             }
     }
 }
@@ -155,4 +178,6 @@ enum class GoogleSignInFailure(val detail: String) {
 sealed interface AuthEvent {
     data class GoogleFailure(val reason: GoogleSignInFailure) : AuthEvent
     data object EmailNotAvailable : AuthEvent
+    /** The API returned 401 for the stored token; the user was sent back to Sign In. */
+    data object SessionExpired : AuthEvent
 }

@@ -1,6 +1,9 @@
 package com.divitiae.pulsesync.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -62,6 +65,19 @@ fun PulseSyncNavHost(
         navController.navigate(Routes.FEED) {
             popUpTo(Routes.SIGN_IN) { inclusive = true }
             launchSingleTop = true
+        }
+    }
+
+    // The API rejected the stored token (HTTP 401): drop the whole back stack
+    // and land on Sign In, which then shows the "session expired" notice.
+    val sessionExpired by authViewModel.sessionExpired.collectAsState()
+    LaunchedEffect(sessionExpired) {
+        if (sessionExpired) {
+            navController.navigate(Routes.SIGN_IN) {
+                popUpTo(navController.graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
+            authViewModel.onSessionExpiryHandled()
         }
     }
 

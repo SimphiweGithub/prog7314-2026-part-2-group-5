@@ -5,6 +5,8 @@
  * C# Corner
  */
 
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
 using PulseSync.Api.Services;
@@ -95,9 +97,22 @@ public class AuthController : ControllerBase
         ));
     }
 
+    /// <summary>
+    /// Revokes the caller's refresh token so it can no longer mint access tokens.
+    /// Requires a valid access token; an anonymous call is rejected with 401.
+    /// </summary>
+    [Authorize]
     [HttpPost("logout")]
     public IActionResult Logout()
     {
+        var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? User?.FindFirstValue("userId");
+        if (userId == null)
+        {
+            return Unauthorized(new { message = "The request does not carry an authenticated user identity." });
+        }
+
+        _dataStore.InvalidateRefreshToken(userId);
+        _logger.LogInformation("User {UserId} logged out; refresh token revoked", userId);
         return Ok(new { message = "Logged out successfully." });
     }
 }

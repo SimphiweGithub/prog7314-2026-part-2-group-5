@@ -114,12 +114,27 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public void Logout_ReturnsOk()
+    public void Logout_WhenAuthenticated_RevokesRefreshTokenAndReturnsOk()
     {
+        // Arrange
+        _dataStore.SaveRefreshToken("test_uid_12345", "refresh_to_revoke");
+        _controller.SignedInAs("test_uid_12345");
+
         // Act
         var result = _controller.Logout();
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
+        _dataStore.GetRefreshToken("test_uid_12345").Should().BeNull();
+    }
+
+    [Fact]
+    public void Logout_WithoutIdentity_ReturnsUnauthorized()
+    {
+        // Act
+        var result = _controller.Logout();
+
+        // Assert
+        result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 }

@@ -3,6 +3,7 @@ package com.divitiae.pulsesync.data.di
 import android.content.Context
 import com.divitiae.pulsesync.data.auth.AuthRepository
 import com.divitiae.pulsesync.data.auth.AuthTokenStore
+import com.divitiae.pulsesync.data.auth.SessionManager
 import com.divitiae.pulsesync.data.local.PulseSyncDatabase
 import com.divitiae.pulsesync.data.remote.ApiClient
 import com.divitiae.pulsesync.data.remote.PulseSyncApi
@@ -40,11 +41,13 @@ class AppContainer(context: Context) {
     // lazily through a lambda that is only invoked once both exist.
     val preferencesRepository = PreferencesRepository(appContext, apiProvider = { api })
     val authTokenStore = AuthTokenStore(appContext)
+    val sessionManager = SessionManager(authTokenStore, scope)
     private val database = PulseSyncDatabase.get(appContext)
 
     val api: PulseSyncApi = ApiClient.create(
         tokenProvider = { authTokenStore.accessToken },
         languageProvider = { preferencesRepository.languageTagBlocking() },
+        onUnauthorized = sessionManager::onUnauthorized,
     )
 
     val networkMonitor = NetworkMonitor(appContext)

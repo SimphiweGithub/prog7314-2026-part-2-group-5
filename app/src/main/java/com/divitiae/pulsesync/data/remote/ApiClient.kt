@@ -25,23 +25,43 @@ object ApiConstants {
  * Adds the bearer token and the user's language to every request. Both are
  * supplied as lambdas so this class stays independent of the auth and
  * preferences layers.
+ *
+ * It also watches the other direction: when a request that *did* carry a
+ * token comes back 401 the server has rejected our session, so
+ * [onUnauthorized] is invoked (once per response) to let the auth layer wipe
+ * the token and send the user back to Sign In. Requests without a token and
+ * the `auth/` endpoints themselves are excluded: a 401 there is a normal
+ * outcome (bad credentials, already logged out), not an expired session.
  */
 class AuthInterceptor(
     private val tokenProvider: () -> String?,
     private val languageProvider: () -> String,
+    private val onUnauthorized: () -> Unit = {},
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val builder = request.newBuilder()
             .addHeader("Accept-Language", languageProvider())
         val token = tokenProvider()
-        if (!token.isNullOrBlank()) {
+        val sentToken = !token.isNullOrBlank()
+        if (sentToken) {
             Log.d(TAG, "AuthInterceptor: attaching Bearer token to [${request.method}] ${request.url}")
             builder.addHeader("Authorization", "Bearer $token")
         } else {
             Log.d(TAG, "AuthInterceptor: no Bearer token attached to [${request.method}] ${request.url}")
         }
-        return chain.proceed(builder.build())
+        val response = chain.proceed(builder.build())
+        if (response.code == HTTP_UNAUTHORIZED && sentToken && !isAuthEndpoint(request.url.encodedPath)) {
+            Log.w(TAG, "AuthInterceptor: stored token rejected by [${request.method}] ${request.url}; expiring session")
+            onUnauthorized()
+        }
+        return response
+    }
+
+    private fun isAuthEndpoint(path: String): Boolean = path.contains("/auth/")
+
+    private companion object {
+        const val HTTP_UNAUTHORIZED = 401
     }
 }
 
@@ -79,6 +99,7 @@ object ApiClient {
     fun create(
         tokenProvider: () -> String?,
         languageProvider: () -> String = { "en" },
+        onUnauthorized: () -> Unit = {},
     ): PulseSyncApi {
         val logging = HttpLoggingInterceptor { message ->
             Log.d("OkHttp", message)
@@ -87,7 +108,7 @@ object ApiClient {
         }
         val client = OkHttpClient.Builder()
             .addInterceptor(NetworkLifecycleInterceptor())
-            .addInterceptor(AuthInterceptor(tokenProvider, languageProvider))
+            .addInterceptor(AuthInterceptor(tokenProvider, languageProvider, onUnauthorized))
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

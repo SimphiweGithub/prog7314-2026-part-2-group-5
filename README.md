@@ -124,6 +124,7 @@ Requests and responses traverse an ordered OkHttp interceptor chain:
 ┌───────────────────────────────┐
 │       AuthInterceptor         │  --> Injects "Authorization: Bearer <JWT>"
 │                               │  --> Injects "Accept-Language: <locale>" (en / zu / af)
+│                               │  <-- HTTP 401 on a request that sent a JWT => SessionManager
 └──────────────┬────────────────┘
                ▼
 ┌───────────────────────────────┐
@@ -201,6 +202,14 @@ All network calls are guarded by `safeApiCall` and `safeApiCallEmpty` ([ApiResul
   - `AppError.Http`: Non-2xx server error code with response body message (marked `retryable = true`).
   - `AppError.Unknown`: Uncaught runtime exceptions (marked `retryable = true`).
 
+### 3.5 Server-Side Authorization & Session Expiry
+Every per-user endpoint on the API (`/notes`, `/preferences`, `/keywords`, `/users/me`, `/downloads`, `/auth/logout`) derives from [AuthenticatedControllerBase.cs](backend/PulseSync.Api/Controllers/AuthenticatedControllerBase.cs), which carries `[Authorize]`. The JWT bearer middleware validates the HMAC-SHA256 signature and expiry of the PulseSync access token before the action runs, and the user id is read from the token's subject claim, so a caller can only ever reach their own data. There is no anonymous fallback user: a missing, expired or tampered token yields **HTTP 401** with a `WWW-Authenticate: Bearer` challenge. The feed endpoints (`/articles`, `/categories`) remain public.
+
+On the client, [SessionManager.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/SessionManager.kt) closes the loop:
+1. `AuthInterceptor` notices a 401 on a request that **did** carry a Bearer token (401s on the `auth/` endpoints, or on requests sent without a token, are ordinary outcomes and are ignored).
+2. `SessionManager` wipes the encrypted token store exactly once, even when several parallel requests fail together, and raises `sessionExpired`.
+3. `PulseSyncNavHost` observes the flag, clears the back stack and lands on Sign In, where `AuthViewModel` queues an `AuthEvent.SessionExpired` so the screen shows "Your session has expired. Please sign in again."
+
 ---
 
 ## 4. CI/CD Pipeline & Cloud Deployment Strategy
@@ -220,7 +229,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 │  • Android SDK CLI & CMake           │  │  • Docker multi-stage build      │
 │  • Step 1: Compile Kotlin + KSP      │  │  • ASP.NET Core 8 Web API Linux  │
 │  • Step 2: Execute JUnit Test Suite  │  │  • Automated SSL / TLS 1.3       │
-│    (.\gradlew.bat test - 57 tests)   │  │  • Zero-downtime rolling restart │
+│    (.\gradlew.bat test - 64 tests)   │  │  • Zero-downtime rolling restart │
 │  • Step 3: Compile Debug APK         │  │  • Health probe verification     │
 │    (.\gradlew.bat assembleDebug)     │  │  • Base URL live:                │
 │  • Artifact Upload: debug.apk        │  │    https://pulsesync-api.        │
@@ -231,7 +240,7 @@ The project utilizes automated Continuous Integration and Continuous Deployment 
 ### 4.1 Continuous Integration (GitHub Actions)
 - **Triggers:** Automated validation fires on all pull requests and direct pushes to `main`.
 - **Validation Gates:**
-  1. **Unit Test Execution:** Runs all 57 test cases across input validation, DTO deserialization, and coroutine ViewModel state tests (`.\gradlew.bat test`).
+  1. **Unit Test Execution:** Runs all 64 test cases across input validation, DTO deserialization, coroutine ViewModel state and session-expiry tests (`.\gradlew.bat test`).
   2. **Assembly & Linting:** Validates KSP Room schema generation and compiles the Android package (`.\gradlew.bat assembleDebug`).
   3. **Build Artifacts:** Packages and archives unsigned debug APK artifacts for integration testing.
 
@@ -421,11 +430,12 @@ sequenceDiagram
 A comprehensive test suite was implemented in `app/src/test/java/com/divitiae/pulsesync/` executing directly on the JVM without requiring slow Android emulators or instrumentation overhead.
 
 ```
-Total tests: 57 | Failures: 0 | Skipped: 0 | Success rate: 100%
+Total tests: 64 | Failures: 0 | Skipped: 0 | Success rate: 100%
   ├── InputValidationTest: 10 passed (100%)
   ├── DtoMapperTest:       11 passed (100%)
   ├── ViewModelStateTest:  25 passed (100%)
   ├── SettingsViewModelTest: 10 passed (100%)
+  ├── SessionExpiryTest:     7 passed (100%)
   └── SmokeTest:            1 passed (100%)
 ```
 
@@ -472,6 +482,18 @@ Location: [SettingsViewModelTest.kt](app/src/test/java/com/divitiae/pulsesync/Se
 - **Persistence:** every preference control writes through `PreferencesRepository` and the change is mirrored to `PUT /api/v1/preferences`; a burst of toggles is debounced into a single cloud push.
 - **Cloud Failure Boundary:** a failed mirror keeps the on-device copy and surfaces a `SyncEvent.Failed` instead of an exception.
 - **Keywords & Topics:** blank and duplicate keywords are rejected before any write, valid keywords are normalised and persisted, removals resolve the stored id, and topic toggles flip the category subscription.
+
+### 6.5 Session Expiry Tests
+Location: [SessionExpiryTest.kt](app/src/test/java/com/divitiae/pulsesync/SessionExpiryTest.kt)
+- **Interceptor (MockWebServer):** a 401 on a request that sent a Bearer token triggers the expiry callback exactly once; a 401 without a token, a 401 on an `auth/` endpoint, and a 200 with a token leave the session alone.
+- **SessionManager:** three concurrent 401s clear the token store once and raise `sessionExpired`; with no stored token nothing happens; `acknowledgeExpiry()` resets the flag.
+- **AuthViewModel:** an expired session drops `hasExistingSession`, resets the sign-in state, and `onSessionExpiryHandled()` queues `AuthEvent.SessionExpired` for the Sign In Snackbar.
+
+### 6.6 Backend Authorization Tests (xUnit)
+Location: [AuthorizationTests.cs](backend/PulseSync.Tests/AuthorizationTests.cs)
+- Drives the real ASP.NET Core pipeline through `WebApplicationFactory<Program>` with Firestore swapped for `InMemoryDataStore`.
+- Asserts 401 + `WWW-Authenticate: Bearer` for every per-user endpoint without a token, 401 for a token whose signature was tampered with, 200 for the public feed endpoints, that notes created by one user are invisible to another, and that logout requires a token.
+- Existing controller tests attach a `ClaimsPrincipal` via [TestPrincipal.cs](backend/PulseSync.Tests/TestPrincipal.cs), mirroring what the JWT middleware sets after validation.
 
 ---
 
@@ -728,6 +750,31 @@ All method and architecture-level attributions across the Android client, testin
     - *URL:* https://www.c-sharpcorner.com/article/dockerizing-an-asp-net-core-web-api/
     - *Author:* C# Corner & Render
 
+44. **Code Attribution No 44** &mdash; [AuthenticatedControllerBase.cs](backend/PulseSync.Api/Controllers/AuthenticatedControllerBase.cs)
+    - *This method was taken from:* "Simple authorization in ASP.NET Core"
+    - *URL:* https://learn.microsoft.com/en-us/aspnet/core/security/authorization/simple
+    - *Author:* Microsoft Learn
+
+45. **Code Attribution No 45** &mdash; [TestPrincipal.cs](backend/PulseSync.Tests/TestPrincipal.cs)
+    - *This method was taken from:* "Unit test controllers in ASP.NET Core"
+    - *URL:* https://learn.microsoft.com/en-us/aspnet/core/mvc/controllers/testing
+    - *Author:* Microsoft Learn
+
+46. **Code Attribution No 46** &mdash; [AuthorizationTests.cs](backend/PulseSync.Tests/AuthorizationTests.cs)
+    - *This method was taken from:* "Integration tests in ASP.NET Core"
+    - *URL:* https://learn.microsoft.com/en-us/aspnet/core/test/integration-tests
+    - *Author:* Microsoft Learn
+
+47. **Code Attribution No 47** &mdash; [SessionManager.kt](app/src/main/java/com/divitiae/pulsesync/data/auth/SessionManager.kt)
+    - *This method was taken from:* "Handle 401 responses with OkHttp interceptors"
+    - *URL:* https://square.github.io/okhttp/features/interceptors/
+    - *Author:* Square, Inc.
+
+48. **Code Attribution No 48** &mdash; [SessionExpiryTest.kt](app/src/test/java/com/divitiae/pulsesync/SessionExpiryTest.kt)
+    - *This method was taken from:* "MockWebServer: scriptable web server for testing HTTP clients"
+    - *URL:* https://github.com/square/okhttp/tree/master/mockwebserver
+    - *Author:* Square, Inc.
+
 ---
 
 ## 9. Build & Verification Instructions
@@ -741,9 +788,15 @@ All method and architecture-level attributions across the Android client, testin
 ```powershell
 .\gradlew.bat test
 ```
-Executes all 57 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
+Executes all 64 unit tests across `InputValidationTest`, `DtoMapperTest`, `ViewModelStateTest`, `SettingsViewModelTest`, `SessionExpiryTest`, and `SmokeTest`. Test reports are generated at `app/build/reports/tests/testDebugUnitTest/index.html`.
 
-### 9.3 Compiling Debug APK
+### 9.3 Running Backend Tests
+```powershell
+dotnet test backend/PulseSync.Tests/PulseSync.Tests.csproj
+```
+Executes all 28 xUnit tests (controller unit tests plus the HTTP-level authorization suite). Requires the .NET 8 SDK; on a machine that only has a newer runtime installed, prefix the command with `$env:DOTNET_ROLL_FORWARD='Major';`.
+
+### 9.4 Compiling Debug APK
 ```powershell
 .\gradlew.bat assembleDebug
 ```

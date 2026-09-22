@@ -5,7 +5,6 @@
  * C# Corner
  */
 
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PulseSync.Api.Models;
 using PulseSync.Api.Services;
@@ -14,7 +13,7 @@ namespace PulseSync.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/users")]
-public class UsersController : ControllerBase
+public class UsersController : AuthenticatedControllerBase
 {
     private readonly IDataStore _dataStore;
 
@@ -22,11 +21,6 @@ public class UsersController : ControllerBase
     {
         _dataStore = dataStore;
     }
-
-    private string CurrentUserId =>
-        User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-        User?.FindFirstValue("userId") ??
-        "demo-user";
 
     [HttpGet("me")]
     public ActionResult<UserDto> GetCurrentUser()
@@ -65,7 +59,7 @@ public class UsersController : ControllerBase
 
 [ApiController]
 [Route("api/v1/downloads")]
-public class DownloadsController : ControllerBase
+public class DownloadsController : AuthenticatedControllerBase
 {
     private readonly IDataStore _dataStore;
 
@@ -73,11 +67,6 @@ public class DownloadsController : ControllerBase
     {
         _dataStore = dataStore;
     }
-
-    private string CurrentUserId =>
-        User?.FindFirstValue(ClaimTypes.NameIdentifier) ??
-        User?.FindFirstValue("userId") ??
-        "demo-user";
 
     [HttpGet]
     public ActionResult<DownloadSlotsDto> GetSlots()
